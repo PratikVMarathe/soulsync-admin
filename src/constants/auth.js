@@ -1,0 +1,19 @@
+export const USER_ROLES = {
+  SUPER_ADMIN: 'SUPER_ADMIN',
+  ADMIN: 'ADMIN',
+  USER: 'USER',
+};
+
+export const USER_STATUSES = {
+  ACTIVE: 'ACTIVE',
+  BLOCKED: 'BLOCKED',
+  SOFT_DELETED: 'SOFT_DELETED',
+};
+
+export const ADMIN_ROLES = [
+  USER_ROLES.SUPER_ADMIN,
+  USER_ROLES.ADMIN,
+];
+
+export const ACTIVE_QUIZ_STATUSES = ['ACTIVE', 'Active'];
+export const INACTIVE_QUIZ_STATUSES = ['INACTIVE', 'Inactive'];
