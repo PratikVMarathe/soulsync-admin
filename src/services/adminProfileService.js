@@ -5,8 +5,18 @@ import {
   runTransaction,
   serverTimestamp,
 } from 'firebase/firestore';
-import { USER_STATUSES } from '../constants/auth';
+import {
+  IDENTITY_LOCK_STATUSES,
+  IDENTITY_TYPES,
+  USER_STATUSES,
+} from '../constants/auth';
 import { auth, db } from '../config/firebase';
+import {
+  buildPhoneIdentityDocumentId,
+  isValidPhoneNumber,
+  normalizePhoneNumber,
+} from '../utils/identity';
+import { toTitleCase } from '../utils/text';
 import { resolveAdminSession } from './adminSession';
 
 class AdminProfileError extends Error {
@@ -22,6 +32,8 @@ const PROFILE_MESSAGES = {
   BLOCKED: 'This admin account is blocked and cannot be updated right now.',
   DELETED: 'This admin account was removed and cannot be updated right now.',
   NOT_FOUND: 'We could not find your admin profile in Firestore.',
+  PHONE_IN_USE: 'This phone number is already locked for another SoulSync account or admin invite.',
+  PHONE_INVALID: 'Phone number must be exactly 10 digits.',
   PHONE_LOCKED: 'Phone number can only be set once. Ask a Super Admin if it needs to be changed.',
   UNAUTHENTICATED: 'Your admin session expired. Please sign in again.',
 };
@@ -30,16 +42,22 @@ function normalizeStatus(status) {
   return status?.toUpperCase() || USER_STATUSES.ACTIVE;
 }
 
-function normalizePhoneNumber(phoneNumber) {
-  if (!phoneNumber) return '';
+const getIdentityLockReference = (documentId) => doc(db, 'identityLocks', documentId);
 
-  const digits = String(phoneNumber).replace(/\D/g, '');
-  if (!digits) return '';
-
-  return String(phoneNumber).trim().startsWith('+')
-    ? `+${digits}`
-    : digits;
-}
+const buildPhoneIdentityLockPayload = ({ existingLock, phoneNumber, role, uid }) => ({
+  type: IDENTITY_TYPES.PHONE,
+  value: phoneNumber,
+  valueNormalized: phoneNumber,
+  uid,
+  role,
+  status: IDENTITY_LOCK_STATUSES.LOCKED,
+  reason: 'ACTIVE_ACCOUNT',
+  lockedBy: existingLock?.lockedBy || 'system',
+  lockedAt: existingLock?.lockedAt || serverTimestamp(),
+  releasedAt: null,
+  releasedBy: null,
+  updatedAt: serverTimestamp(),
+});
 
 function validateUpdatableProfile(profile) {
   if (!profile) {
@@ -70,9 +88,18 @@ export async function updateCurrentAdminProfile({ name, phoneNumber }) {
   const snapshot = await getDoc(userReference);
   const existingProfile = validateUpdatableProfile(snapshot.exists() ? snapshot.data() : null);
 
-  const trimmedName = name?.trim() || existingProfile.name || authUser.displayName || authUser.email || 'Admin User';
+  const trimmedName = toTitleCase(name)
+    || toTitleCase(existingProfile.name)
+    || toTitleCase(authUser.displayName)
+    || authUser.email
+    || 'Admin User';
   const normalizedPhone = normalizePhoneNumber(phoneNumber);
   const currentPhone = existingProfile.phoneNumber || '';
+  const wantsToSetPhone = !currentPhone && Boolean(phoneNumber?.trim());
+
+  if (wantsToSetPhone && !isValidPhoneNumber(phoneNumber)) {
+    throw new AdminProfileError('PHONE_INVALID', PROFILE_MESSAGES.PHONE_INVALID);
+  }
 
   if (currentPhone && normalizedPhone && normalizedPhone !== currentPhone) {
     throw new AdminProfileError('PHONE_LOCKED', PROFILE_MESSAGES.PHONE_LOCKED);
@@ -83,6 +110,7 @@ export async function updateCurrentAdminProfile({ name, phoneNumber }) {
   }
 
   const nextPhone = currentPhone || normalizedPhone || null;
+  const phoneLockDocumentId = nextPhone ? buildPhoneIdentityDocumentId(nextPhone) : null;
 
   await runTransaction(db, async (transaction) => {
     const currentSnapshot = await transaction.get(userReference);
@@ -92,6 +120,31 @@ export async function updateCurrentAdminProfile({ name, phoneNumber }) {
     }
 
     validateUpdatableProfile(currentSnapshot.data());
+
+    if (phoneLockDocumentId) {
+      const phoneLockReference = getIdentityLockReference(phoneLockDocumentId);
+      const phoneLockSnapshot = await transaction.get(phoneLockReference);
+      const existingLock = phoneLockSnapshot.exists() ? phoneLockSnapshot.data() : null;
+
+      if (existingLock && existingLock.uid && existingLock.uid !== authUser.uid) {
+        throw new AdminProfileError('PHONE_IN_USE', PROFILE_MESSAGES.PHONE_IN_USE);
+      }
+
+      if (existingLock && !existingLock.uid) {
+        throw new AdminProfileError('PHONE_IN_USE', PROFILE_MESSAGES.PHONE_IN_USE);
+      }
+
+      transaction.set(
+        phoneLockReference,
+        buildPhoneIdentityLockPayload({
+          existingLock,
+          phoneNumber: nextPhone,
+          role: existingProfile.role,
+          uid: authUser.uid,
+        }),
+        { merge: true },
+      );
+    }
 
     transaction.update(userReference, {
       name: trimmedName,

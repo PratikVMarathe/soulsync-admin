@@ -3,7 +3,7 @@ import AdminIcon from './AdminIcon';
 
 const bottomNavItems = [
   { key: 'home', label: 'Home', icon: 'home', route: '/admin' },
-  { key: 'admins', label: 'Admins', icon: 'shield', actionKey: 'admin-management' },
+  { key: 'admins', label: 'Admins', icon: 'shield', route: '/admin/admins' },
   { key: 'quizzes', label: 'Quizzes', icon: 'book', actionKey: 'quiz-management' },
   { key: 'users', label: 'Users', icon: 'users', actionKey: 'user-management' },
   { key: 'profile', label: 'Profile', icon: 'profile', route: '/admin/profile' },
@@ -18,6 +18,8 @@ export default function AdminBottomNav({
 
   const activeKey = location.pathname.startsWith('/admin/profile')
     ? 'profile'
+    : location.pathname.startsWith('/admin/admins')
+      ? 'admins'
     : location.pathname.startsWith('/admin')
       ? 'home'
       : 'admins';

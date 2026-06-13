@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import AppErrorBoundary from './components/AppErrorBoundary';
+import AppNoticeCenter from './components/AppNoticeCenter';
 import LoadingScreen from './components/LoadingScreen';
 import { AppNoticeProvider } from './context/AppNoticeContext';
 import AdminWorkspace from './AdminWorkspace';
@@ -84,7 +85,7 @@ function AdminRoutes() {
       <Routes>
         <Route path="/" element={<Navigate replace to="/admin" />} />
         <Route
-          path="/admin"
+          path="/admin/*"
           element={viewer ? (
             <AdminWorkspace
               onSignOut={handleSignOut}

@@ -152,7 +152,6 @@ function AdminManagementPanel({ admins, onAction }) {
               <th>Role</th>
               <th>Email</th>
               <th>Status</th>
-              <th>Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -170,16 +169,6 @@ function AdminManagementPanel({ admins, onAction }) {
                 <td data-label="Email">{admin.email || 'Not set'}</td>
                 <td data-label="Status">
                   <span className="admin-status-pill is-success">{admin.status || 'ACTIVE'}</span>
-                </td>
-                <td data-label="Actions">
-                  <div className="admin-row-actions">
-                    <button className="admin-icon-button is-small" onClick={() => onAction('admin-management')} type="button">
-                      <AdminIcon name="pencil" size={16} />
-                    </button>
-                    <button className="admin-icon-button is-small" onClick={() => onAction('admin-management')} type="button">
-                      <AdminIcon name="shield" size={16} />
-                    </button>
-                  </div>
                 </td>
               </tr>
             ))}
@@ -270,15 +259,6 @@ function QuizManagementPanel({ onAction, quizzes }) {
                 <AdminIcon name="fire" size={15} />
                 {quiz.timeLimitLabel || quiz.time || `${quiz.estimatedMinutes || 0} min`}
               </span>
-            </div>
-
-            <div className="admin-quiz-actions">
-              <button className="secondary-cta is-compact" onClick={() => onAction('quiz-management')} type="button">
-                Edit
-              </button>
-              <button className="primary-cta is-compact" onClick={() => onAction('quiz-management')} type="button">
-                Toggle Active
-              </button>
             </div>
           </article>
         ))}
@@ -400,7 +380,10 @@ export default function AdminDashboardPage({ onAction, viewer }) {
 
       {role !== USER_ROLES.SUPER_ADMIN ? (
         <section className="admin-content-grid admin-content-grid-primary">
-          <QuickActionsPanel onAction={onAction} quickActions={quickActions} />
+          <div className="admin-panel-stack">
+            <QuickActionsPanel onAction={onAction} quickActions={quickActions} />
+            <AdminManagementPanel admins={previewAdmins} onAction={onAction} />
+          </div>
           <RecentActivityPanel activity={previewActivity} onAction={onAction} />
         </section>
       ) : null}

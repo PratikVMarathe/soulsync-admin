@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import AdminIcon from '../components/AdminIcon';
 import { updateCurrentAdminProfile } from '../services/adminProfileService';
+import { sanitizePhoneInput } from '../utils/identity';
 import { formatRoleLabel, formatShortDate, getInitials } from '../utils/formatters';
 
 export default function AdminProfilePage({ onUserChange, viewer }) {
@@ -28,7 +29,7 @@ export default function AdminProfilePage({ onUserChange, viewer }) {
     const { name, value } = event.target;
     setFormState((current) => ({
       ...current,
-      [name]: value,
+      [name]: name === 'phoneNumber' ? sanitizePhoneInput(value) : value,
     }));
     setFeedback({ error: '', success: '' });
   };
@@ -140,6 +141,8 @@ export default function AdminProfilePage({ onUserChange, viewer }) {
             <span>Phone Number</span>
             <input
               disabled={!canEditPhone}
+              inputMode="numeric"
+              maxLength={10}
               name="phoneNumber"
               onChange={handleChange}
               placeholder="Add phone number"

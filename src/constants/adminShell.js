@@ -4,7 +4,7 @@ export const SIDEBAR_ITEMS = [
   { key: 'dashboard', label: 'Dashboard', icon: 'home', route: '/admin' },
   { key: 'quiz-management', label: 'Quiz Management', icon: 'book' },
   { key: 'user-management', label: 'User Management', icon: 'users' },
-  { key: 'admin-management', label: 'Admin Management', icon: 'shield', roles: [USER_ROLES.SUPER_ADMIN] },
+  { key: 'admin-management', label: 'Admin Management', icon: 'shield', route: '/admin/admins', roles: [USER_ROLES.SUPER_ADMIN] },
   // { key: 'analytics', label: 'Analytics', icon: 'chart' },
   // { key: 'settings', label: 'Settings', icon: 'settings' },
 ];
@@ -32,18 +32,18 @@ export const QUICK_ACTIONS = [
     roles: [USER_ROLES.SUPER_ADMIN, USER_ROLES.ADMIN],
   },
   {
-    description: 'Platform analytics',
-    icon: 'chart',
-    key: 'view-reports',
-    label: 'View Reports',
+    description: 'Manage Admins',
+    icon: 'shield',
+    key: 'admin-management',
+    label: 'View Admins',
     roles: [USER_ROLES.SUPER_ADMIN, USER_ROLES.ADMIN],
   },
 ];
 
 export const ACTION_MESSAGES = {
-  'admin-management': 'Admin management tools will be connected in the next phase.',
+  'admin-management': 'Admin management details are loading from Firestore now.',
   // 'analytics': 'Analytics dashboards are not wired up yet. This card is a preview for the next phase.',
-  'create-admin': 'Create Admin will be enabled once invite and duplicate-identity enforcement moves to trusted backend code.',
+  'create-admin': 'Admin invites now use the Phase 4 identity-lock flow.',
   'create-quiz': 'Quiz creation UI is planned next. This dashboard shell is ready for it.',
   'notification-center': 'Notifications are not connected yet. This bell is ready for upcoming admin alerts.',
   profile: 'Admin profile settings will be connected in the next phase.',

@@ -52,8 +52,8 @@ export default function AdminAccessPage({
           </button>
 
           <p className="admin-access-footnote">
-            If this Google account is missing an admin profile, SoulSync will block the session and
-            ask a Super Admin to create access first.
+            First-time admin access is created from a Super Admin invite. If this Google account is
+            not invited yet, SoulSync will block the session and ask a Super Admin to create access first.
           </p>
         </div>
       </div>
