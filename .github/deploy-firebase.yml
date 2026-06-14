@@ -1,0 +1,74 @@
+name: Deploy Admin to Firebase Hosting
+
+on:
+  push:
+    branches:
+      - release/dev
+      - release/prod
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Configure DEV environment
+        if: github.ref_name == 'release/dev'
+        run: |
+          echo "FIREBASE_PROJECT_ID=soulsync-b29c8" >> $GITHUB_ENV
+          echo "FIREBASE_CONFIG_FILE=firebase.dev.json" >> $GITHUB_ENV
+          echo "VITE_FIREBASE_API_KEY=${{ secrets.VITE_FIREBASE_API_KEY_DEV }}" >> $GITHUB_ENV
+          echo "VITE_FIREBASE_AUTH_DOMAIN=${{ secrets.VITE_FIREBASE_AUTH_DOMAIN_DEV }}" >> $GITHUB_ENV
+          echo "VITE_FIREBASE_PROJECT_ID=${{ secrets.VITE_FIREBASE_PROJECT_ID_DEV }}" >> $GITHUB_ENV
+          echo "VITE_FIREBASE_STORAGE_BUCKET=${{ secrets.VITE_FIREBASE_STORAGE_BUCKET_DEV }}" >> $GITHUB_ENV
+          echo "VITE_FIREBASE_MESSAGING_SENDER_ID=${{ secrets.VITE_FIREBASE_MESSAGING_SENDER_ID_DEV }}" >> $GITHUB_ENV
+          echo "VITE_FIREBASE_APP_ID=${{ secrets.VITE_FIREBASE_APP_ID_DEV }}" >> $GITHUB_ENV
+          echo "VITE_FIREBASE_MEASUREMENT_ID=${{ secrets.VITE_FIREBASE_MEASUREMENT_ID_DEV }}" >> $GITHUB_ENV
+
+      - name: Configure PROD environment
+        if: github.ref_name == 'release/prod'
+        run: |
+          echo "FIREBASE_PROJECT_ID=soulsync-prod-app" >> $GITHUB_ENV
+          echo "FIREBASE_CONFIG_FILE=firebase.prod.json" >> $GITHUB_ENV
+          echo "VITE_FIREBASE_API_KEY=${{ secrets.VITE_FIREBASE_API_KEY_PROD }}" >> $GITHUB_ENV
+          echo "VITE_FIREBASE_AUTH_DOMAIN=${{ secrets.VITE_FIREBASE_AUTH_DOMAIN_PROD }}" >> $GITHUB_ENV
+          echo "VITE_FIREBASE_PROJECT_ID=${{ secrets.VITE_FIREBASE_PROJECT_ID_PROD }}" >> $GITHUB_ENV
+          echo "VITE_FIREBASE_STORAGE_BUCKET=${{ secrets.VITE_FIREBASE_STORAGE_BUCKET_PROD }}" >> $GITHUB_ENV
+          echo "VITE_FIREBASE_MESSAGING_SENDER_ID=${{ secrets.VITE_FIREBASE_MESSAGING_SENDER_ID_PROD }}" >> $GITHUB_ENV
+          echo "VITE_FIREBASE_APP_ID=${{ secrets.VITE_FIREBASE_APP_ID_PROD }}" >> $GITHUB_ENV
+          echo "VITE_FIREBASE_MEASUREMENT_ID=${{ secrets.VITE_FIREBASE_MEASUREMENT_ID_PROD }}" >> $GITHUB_ENV
+
+      - name: Build
+        run: npm run build
+
+      - name: Create DEV service account file
+        if: github.ref_name == 'release/dev'
+        run: |
+          cat > "$HOME/firebase-key.json" <<'EOF'
+          ${{ secrets.FIREBASE_SERVICE_ACCOUNT_DEV }}
+          EOF
+
+      - name: Create PROD service account file
+        if: github.ref_name == 'release/prod'
+        run: |
+          cat > "$HOME/firebase-key.json" <<'EOF'
+          ${{ secrets.FIREBASE_SERVICE_ACCOUNT_PROD }}
+          EOF
+
+      - name: Deploy to Firebase Hosting
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ runner.temp }}/firebase-key.json
+        run: |
+          cp "$HOME/firebase-key.json" "${{ runner.temp }}/firebase-key.json"
+          npm install -g firebase-tools
+          firebase deploy --only hosting --config "$FIREBASE_CONFIG_FILE" --project "$FIREBASE_PROJECT_ID" --non-interactive
