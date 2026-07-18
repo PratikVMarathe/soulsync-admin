@@ -1176,7 +1176,7 @@ a {
 
 .admin-quiz-management-page,
 .admin-quiz-editor-page {
-  max-width: 1480px;
+  /* max-width: 1750px; */
   width: 100%;
 }
 
