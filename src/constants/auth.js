@@ -42,5 +42,5 @@ export const IDENTITY_LOCK_REASONS = {
   ROOT_SUPER_ADMIN: 'ROOT_SUPER_ADMIN',
 };
 
-export const ACTIVE_QUIZ_STATUSES = ['ACTIVE', 'Active'];
-export const INACTIVE_QUIZ_STATUSES = ['INACTIVE', 'Inactive'];
+export const ACTIVE_QUIZ_STATUSES = ['ACTIVE'];
+export const INACTIVE_QUIZ_STATUSES = ['INACTIVE'];

@@ -10,6 +10,8 @@ import AdminDashboardPage from './pages/AdminDashboardPage';
 import AdminEditManagedProfilePage from './pages/AdminEditManagedProfilePage';
 import AdminManagementPage from './pages/AdminManagementPage';
 import AdminProfilePage from './pages/AdminProfilePage';
+import QuizEditorPage from './pages/QuizEditorPage';
+import QuizManagementPage from './pages/QuizManagementPage';
 import AppStatusView from './components/AppStatusView';
 
 export default function AdminWorkspace({
@@ -29,6 +31,10 @@ export default function AdminWorkspace({
   const isCreateAdminRoute = normalizedPath === '/admin/admins/create';
   const editAdminMatch = normalizedPath.match(/^\/admin\/admins\/([^/]+)\/edit$/);
   const editingAdminId = editAdminMatch?.[1] || null;
+  const isQuizManagementRoute = normalizedPath === '/admin/quizzes';
+  const isCreateQuizRoute = normalizedPath === '/admin/quizzes/create';
+  const editQuizMatch = normalizedPath.match(/^\/admin\/quizzes\/([^/]+)\/edit$/);
+  const editingQuizId = editQuizMatch?.[1] || null;
 
   const handlePlaceholderAction = useCallback((actionKey) => {
     if (actionKey === 'profile') {
@@ -46,6 +52,16 @@ export default function AdminWorkspace({
       return;
     }
 
+    if (actionKey === 'quiz-management') {
+      navigate('/admin/quizzes');
+      return;
+    }
+
+    if (actionKey === 'create-quiz') {
+      navigate('/admin/quizzes/create');
+      return;
+    }
+
     if (onPlaceholderAction) {
       onPlaceholderAction(actionKey);
       return;
@@ -59,6 +75,8 @@ export default function AdminWorkspace({
 
   const currentSection = isProfileRoute
     ? 'profile'
+    : normalizedPath.startsWith('/admin/quizzes')
+      ? 'quiz-management'
     : normalizedPath.startsWith('/admin/admins')
       ? 'admin-management'
       : 'dashboard';
@@ -98,8 +116,43 @@ export default function AdminWorkspace({
             viewer={viewer}
           />
         ) : null}
+        {isQuizManagementRoute ? (
+          <QuizManagementPage
+            onCreateQuiz={() => navigate('/admin/quizzes/create')}
+            onEditQuiz={(quizId) => navigate(`/admin/quizzes/${quizId}/edit`)}
+            viewer={viewer}
+          />
+        ) : null}
+        {isCreateQuizRoute ? (
+          <QuizEditorPage
+            onBack={() => navigate('/admin/quizzes')}
+            onSaved={(quizId, options = {}) => {
+              if (options.stayOnPage && quizId) {
+                navigate(`/admin/quizzes/${quizId}/edit`, { replace: true });
+                return;
+              }
+              navigate('/admin/quizzes');
+            }}
+            viewer={viewer}
+          />
+        ) : null}
+        {editingQuizId ? (
+          <QuizEditorPage
+            onBack={() => navigate('/admin/quizzes')}
+            onSaved={() => {}}
+            quizId={editingQuizId}
+            viewer={viewer}
+          />
+        ) : null}
         {isProfileRoute ? <AdminProfilePage onUserChange={onUserChange} viewer={viewer} /> : null}
-        {!isDashboardRoute && !isProfileRoute && !isAdminManagementRoute && !isCreateAdminRoute && !editingAdminId ? (
+        {!isDashboardRoute
+          && !isProfileRoute
+          && !isAdminManagementRoute
+          && !isCreateAdminRoute
+          && !editingAdminId
+          && !isQuizManagementRoute
+          && !isCreateQuizRoute
+          && !editingQuizId ? (
           <AppStatusView
             state={{
               message: 'The admin page you requested does not exist.',

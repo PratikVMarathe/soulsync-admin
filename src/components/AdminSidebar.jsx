@@ -68,7 +68,7 @@ export default function AdminSidebar({
                 return (
                   <NavLink
                     className={({ isActive }) => `admin-sidebar-link${isActive ? ' is-active' : ''}`}
-                    end
+                    end={item.route === '/admin'}
                     key={item.key}
                     onClick={() => onExpandedChange(false)}
                     to={item.route}
