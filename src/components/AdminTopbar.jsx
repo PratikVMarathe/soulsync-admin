@@ -43,6 +43,16 @@ export default function AdminTopbar({
           <AdminIcon name="logout" size={18} />
           <span>{signOutPending ? 'Signing out...' : 'Sign out'}</span>
         </button>
+
+        <button
+          aria-label={signOutPending ? 'Signing out' : 'Sign out'}
+          className="admin-icon-button admin-mobile-signout-button"
+          disabled={signOutPending}
+          onClick={onSignOut}
+          type="button"
+        >
+          <AdminIcon name="logout" size={18} />
+        </button>
       </div>
     </header>
   );

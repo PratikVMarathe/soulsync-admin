@@ -92,6 +92,15 @@ const icons = {
       <circle cx="15" cy="12" r="3" />
     </>
   ),
+  trash: (
+    <>
+      <path d="M4 7h16" />
+      <path d="M10 11v6" />
+      <path d="M14 11v6" />
+      <path d="M6 7l1 14h10l1-14" />
+      <path d="M9 7V4h6v3" />
+    </>
+  ),
   userBlocked: (
     <>
       <circle cx="10" cy="8" r="3.5" />

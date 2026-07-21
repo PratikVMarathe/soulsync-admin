@@ -188,9 +188,11 @@ function QuizCard({
           className="secondary-cta is-compact"
           disabled={isBusy}
           onClick={(event) => handleActionClick(event, 'edit')}
+          aria-label={`Edit ${quiz.title || 'quiz'}`}
           type="button"
         >
-          Edit
+          <AdminIcon name="pencil" size={16} />
+          <span className="admin-action-label">Edit</span>
         </button>
 
         {canPublish ? (
@@ -198,9 +200,11 @@ function QuizCard({
             className="primary-cta is-compact"
             disabled={isBusy}
             onClick={(event) => handleActionClick(event, 'publish')}
+            aria-label={`Publish ${quiz.title || 'quiz'}`}
             type="button"
           >
-            {busyAction === 'publish' ? 'Publishing...' : 'Publish'}
+            <AdminIcon name="bookPlus" size={16} />
+            <span className="admin-action-label">{busyAction === 'publish' ? 'Publishing...' : 'Publish'}</span>
           </button>
         ) : null}
 
@@ -209,9 +213,11 @@ function QuizCard({
             className="secondary-cta is-compact"
             disabled={isBusy}
             onClick={(event) => handleActionClick(event, 'activate')}
+            aria-label={`Activate ${quiz.title || 'quiz'}`}
             type="button"
           >
-            {busyAction === 'activate' ? 'Activating...' : 'Activate'}
+            <AdminIcon name="toggle" size={16} />
+            <span className="admin-action-label">{busyAction === 'activate' ? 'Activating...' : 'Activate'}</span>
           </button>
         ) : null}
 
@@ -220,9 +226,11 @@ function QuizCard({
             className="secondary-cta is-compact"
             disabled={isBusy}
             onClick={(event) => handleActionClick(event, 'deactivate')}
+            aria-label={`Deactivate ${quiz.title || 'quiz'}`}
             type="button"
           >
-            {busyAction === 'deactivate' ? 'Deactivating...' : 'Deactivate'}
+            <AdminIcon name="eyeOff" size={16} />
+            <span className="admin-action-label">{busyAction === 'deactivate' ? 'Deactivating...' : 'Deactivate'}</span>
           </button>
         ) : null}
 
@@ -230,9 +238,11 @@ function QuizCard({
           className="ghost-cta is-compact"
           disabled={isBusy}
           onClick={(event) => handleActionClick(event, 'delete')}
+          aria-label={`Move ${quiz.title || 'quiz'} to inactive`}
           type="button"
         >
-          {busyAction === 'delete' ? 'Deleting...' : 'Delete'}
+          <AdminIcon name="trash" size={16} />
+          <span className="admin-action-label">{busyAction === 'delete' ? 'Deleting...' : 'Delete'}</span>
         </button>
       </div>
     </article>
