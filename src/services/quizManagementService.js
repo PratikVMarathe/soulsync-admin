@@ -253,8 +253,12 @@ export async function saveQuizDraft({ formState, quizId = null, viewer }) {
         throw new QuizManagementError('quiz-management/not-found', 'This quiz no longer exists.');
       }
 
-      transaction.update(quizReference, {
+      const currentQuiz = quizSnapshot.data();
+
+      transaction.set(quizReference, {
         ...firestorePayload,
+        createdAt: currentQuiz.createdAt,
+        createdBy: currentQuiz.createdBy,
         totalQuestions: firestorePayload.questions.length,
         updatedAt: serverTimestamp(),
         updatedBy: viewer.uid,
@@ -308,8 +312,12 @@ export async function saveQuizChanges({ formState, quizId, viewer }) {
       throw new QuizManagementError('quiz-management/not-found', 'This quiz no longer exists.');
     }
 
-    transaction.update(quizReference, {
+    const currentQuiz = quizSnapshot.data();
+
+    transaction.set(quizReference, {
       ...firestorePayload,
+      createdAt: currentQuiz.createdAt,
+      createdBy: currentQuiz.createdBy,
       totalQuestions: firestorePayload.questions.length,
       updatedAt: serverTimestamp(),
       updatedBy: viewer.uid,
@@ -353,8 +361,12 @@ export async function publishQuiz({ formState = null, quizId = null, viewer }) {
         throw new QuizManagementError('quiz-management/not-found', 'This quiz no longer exists.');
       }
 
-      transaction.update(quizReference, {
+      const currentQuiz = quizSnapshot.data();
+
+      transaction.set(quizReference, {
         ...firestorePayload,
+        createdAt: currentQuiz.createdAt,
+        createdBy: currentQuiz.createdBy,
         totalQuestions: firestorePayload.questions.length,
         updatedAt: serverTimestamp(),
         updatedBy: viewer.uid,
@@ -397,7 +409,6 @@ export async function setQuizActiveState({ active, quizId, viewer }) {
   const action = active ? QUIZ_ACTIONS.ACTIVATE : QUIZ_ACTIONS.DEACTIVATE;
   const quizSnapshot = await loadQuizSnapshot(quizId);
   const quiz = mapQuizDocument(quizSnapshot);
-  const { id: _removedQuizId, ...quizDocument } = quiz;
 
   if (active) {
     const payload = buildQuizPayloadFromForm(quizToFormState(quiz), QUIZ_STATUSES.ACTIVE);
@@ -410,7 +421,6 @@ export async function setQuizActiveState({ active, quizId, viewer }) {
 
   await runTransaction(db, async (transaction) => {
     transaction.update(quizReference, {
-      ...quizDocument,
       status: nextStatus,
       updatedAt: serverTimestamp(),
       updatedBy: viewer.uid,
@@ -430,13 +440,11 @@ export async function softDeleteQuiz({ quizId, viewer }) {
 
   const quizSnapshot = await loadQuizSnapshot(quizId);
   const quiz = mapQuizDocument(quizSnapshot);
-  const { id: _removedQuizId, ...quizDocument } = quiz;
   const quizReference = getQuizReference(quizId);
   const auditReference = doc(collection(db, AUDIT_LOGS_COLLECTION));
 
   await runTransaction(db, async (transaction) => {
     transaction.update(quizReference, {
-      ...quizDocument,
       status: QUIZ_STATUSES.INACTIVE,
       updatedAt: serverTimestamp(),
       updatedBy: viewer.uid,
