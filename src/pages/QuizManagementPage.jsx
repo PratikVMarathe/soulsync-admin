@@ -184,17 +184,6 @@ function QuizCard({
       </dl>
 
       <div className="admin-quiz-card-actions">
-        <button
-          className="secondary-cta is-compact"
-          disabled={isBusy}
-          onClick={(event) => handleActionClick(event, 'edit')}
-          aria-label={`Edit ${quiz.title || 'quiz'}`}
-          type="button"
-        >
-          <AdminIcon name="pencil" size={16} />
-          <span className="admin-action-label">Edit</span>
-        </button>
-
         {canPublish ? (
           <button
             className="primary-cta is-compact"
@@ -288,7 +277,7 @@ export default function QuizManagementPage({
     try {
       if (action === 'publish') {
         await publishQuiz({ quizId: quiz.id, viewer });
-        setFeedback({ error: '', success: 'Quiz published and activated.' });
+        setFeedback({ error: '', success: 'Quiz published, activated, and made visible to users.' });
       }
 
       if (action === 'activate') {

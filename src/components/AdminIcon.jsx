@@ -129,10 +129,17 @@ const icons = {
       <path d="m18 6-12 12" />
     </>
   ),
-  profile: (
+  spark: (
     <>
-      <circle cx="12" cy="8" r="4" />
-      <path d="M4 21a8 8 0 0 1 16 0" />
+      <path d="M12 2v4M12 18v4M2 12h4M18 12h4" />
+      <path d="m4.9 4.9 2.8 2.8M16.3 16.3l2.8 2.8M4.9 19.1l2.8-2.8M16.3 7.7l2.8-2.8" />
+    </>
+  ),
+  plus: <path d="M12 5v14M5 12h14" />,
+  search: (
+    <>
+      <circle cx="11" cy="11" r="7" />
+      <path d="m21 21-4.3-4.3" />
     </>
   ),
 };

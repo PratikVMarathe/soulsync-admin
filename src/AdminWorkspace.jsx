@@ -10,6 +10,8 @@ import AdminDashboardPage from './pages/AdminDashboardPage';
 import AdminEditManagedProfilePage from './pages/AdminEditManagedProfilePage';
 import AdminManagementPage from './pages/AdminManagementPage';
 import AdminProfilePage from './pages/AdminProfilePage';
+import MandalaOpportunityEditorPage from './pages/MandalaOpportunityEditorPage';
+import MandalaUpdatesPage from './pages/MandalaUpdatesPage';
 import QuizEditorPage from './pages/QuizEditorPage';
 import QuizManagementPage from './pages/QuizManagementPage';
 import AppStatusView from './components/AppStatusView';
@@ -27,6 +29,10 @@ export default function AdminWorkspace({
   const normalizedPath = location.pathname.replace(/\/+$/, '') || '/admin';
   const isProfileRoute = normalizedPath === '/admin/profile';
   const isDashboardRoute = normalizedPath === '/admin';
+  const isMandalaRoute = normalizedPath === '/admin/mandala';
+  const isCreateMandalaRoute = normalizedPath === '/admin/mandala/create';
+  const editMandalaMatch = normalizedPath.match(/^\/admin\/mandala\/([^/]+)\/edit$/);
+  const editingOpportunityId = editMandalaMatch?.[1] || null;
   const isAdminManagementRoute = normalizedPath === '/admin/admins';
   const isCreateAdminRoute = normalizedPath === '/admin/admins/create';
   const editAdminMatch = normalizedPath.match(/^\/admin\/admins\/([^/]+)\/edit$/);
@@ -39,6 +45,11 @@ export default function AdminWorkspace({
   const handlePlaceholderAction = useCallback((actionKey) => {
     if (actionKey === 'profile') {
       navigate('/admin/profile');
+      return;
+    }
+
+    if (actionKey === 'mandala-updates') {
+      navigate('/admin/mandala');
       return;
     }
 
@@ -75,11 +86,13 @@ export default function AdminWorkspace({
 
   const currentSection = isProfileRoute
     ? 'profile'
-    : normalizedPath.startsWith('/admin/quizzes')
-      ? 'quiz-management'
-    : normalizedPath.startsWith('/admin/admins')
-      ? 'admin-management'
-      : 'dashboard';
+    : normalizedPath.startsWith('/admin/mandala')
+      ? 'mandala-updates'
+      : normalizedPath.startsWith('/admin/quizzes')
+        ? 'quiz-management'
+        : normalizedPath.startsWith('/admin/admins')
+          ? 'admin-management'
+          : 'dashboard';
 
   return (
     <AppErrorBoundary
@@ -96,6 +109,28 @@ export default function AdminWorkspace({
         viewer={viewer}
       >
         {isDashboardRoute ? <AdminDashboardPage onAction={handlePlaceholderAction} viewer={viewer} /> : null}
+        {isMandalaRoute ? (
+          <MandalaUpdatesPage
+            onCreateOpportunity={() => navigate('/admin/mandala/create')}
+            onEditOpportunity={(id) => navigate(`/admin/mandala/${id}/edit`)}
+            viewer={viewer}
+          />
+        ) : null}
+        {isCreateMandalaRoute ? (
+          <MandalaOpportunityEditorPage
+            onBack={() => navigate('/admin/mandala')}
+            onSaved={() => navigate('/admin/mandala')}
+            viewer={viewer}
+          />
+        ) : null}
+        {editingOpportunityId ? (
+          <MandalaOpportunityEditorPage
+            onBack={() => navigate('/admin/mandala')}
+            onSaved={() => navigate('/admin/mandala')}
+            opportunityId={editingOpportunityId}
+            viewer={viewer}
+          />
+        ) : null}
         {isAdminManagementRoute ? (
           <AdminManagementPage
             onCreateInvite={() => navigate('/admin/admins/create')}
@@ -147,6 +182,9 @@ export default function AdminWorkspace({
         {isProfileRoute ? <AdminProfilePage onUserChange={onUserChange} viewer={viewer} /> : null}
         {!isDashboardRoute
           && !isProfileRoute
+          && !isMandalaRoute
+          && !isCreateMandalaRoute
+          && !editingOpportunityId
           && !isAdminManagementRoute
           && !isCreateAdminRoute
           && !editingAdminId

@@ -3,6 +3,7 @@ import { USER_ROLES } from './auth';
 export const SIDEBAR_ITEMS = [
   { key: 'dashboard', label: 'Dashboard', icon: 'home', route: '/admin' },
   { key: 'quiz-management', label: 'Quiz Management', icon: 'book', route: '/admin/quizzes' },
+  { key: 'mandala-updates', label: 'Maṇḍala Updates', icon: 'lotus', route: '/admin/mandala', roles: [USER_ROLES.SUPER_ADMIN, USER_ROLES.ADMIN] },
   { key: 'user-management', label: 'User Management', icon: 'users' },
   { key: 'admin-management', label: 'Admin Management', icon: 'shield', route: '/admin/admins', roles: [USER_ROLES.SUPER_ADMIN] },
   // { key: 'analytics', label: 'Analytics', icon: 'chart' },
