@@ -10,6 +10,7 @@ import {
   runTransaction,
   serverTimestamp,
   where,
+  writeBatch,
 } from 'firebase/firestore';
 import { USER_ROLES } from '../constants/auth';
 import {
@@ -61,12 +62,42 @@ function getTimestamp(value) {
   return value ? Timestamp.fromDate(value) : null;
 }
 
+function toDate(value) {
+  if (!value) return null;
+  if (value instanceof Date) return Number.isNaN(value.getTime()) ? null : value;
+  if (typeof value?.toDate === 'function') return value.toDate();
+
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
 function toMillis(value) {
   if (!value) return 0;
   if (typeof value?.toMillis === 'function') return value.toMillis();
   if (typeof value?.toDate === 'function') return value.toDate().getTime();
   const date = new Date(value);
   return Number.isNaN(date.getTime()) ? 0 : date.getTime();
+}
+
+function getEndOfToday() {
+  const endOfToday = new Date();
+  endOfToday.setHours(23, 59, 59, 999);
+  return endOfToday;
+}
+
+function getActivationExpiryDate(expireAt) {
+  const expiryDate = toDate(expireAt);
+
+  if (expiryDate && expiryDate.getTime() > Date.now()) {
+    return expiryDate;
+  }
+
+  return getEndOfToday();
+}
+
+function hasExpired(expireAt) {
+  const expiryMillis = toMillis(expireAt);
+  return Boolean(expiryMillis) && expiryMillis <= Date.now();
 }
 
 function sortByRecentUpdate(left, right) {
@@ -174,6 +205,41 @@ async function loadQuizSnapshot(quizId) {
   return quizSnapshot;
 }
 
+async function deactivateExpiredQuizzes(quizzes, viewer) {
+  const expiredQuizzes = quizzes.filter((quiz) => (
+    quiz.status === QUIZ_STATUSES.ACTIVE && hasExpired(quiz.expireAt)
+  ));
+
+  if (!expiredQuizzes.length) return [];
+
+  const batch = writeBatch(db);
+  const reconciledAt = new Date();
+
+  expiredQuizzes.slice(0, 200).forEach((quiz) => {
+    batch.update(getQuizReference(quiz.id), {
+      status: QUIZ_STATUSES.INACTIVE,
+      updatedAt: serverTimestamp(),
+      updatedBy: viewer.uid,
+    });
+
+    batch.set(doc(collection(db, AUDIT_LOGS_COLLECTION)), buildAuditLogPayload({
+      action: QUIZ_ACTIONS.DEACTIVATE,
+      targetId: quiz.id,
+      targetTitle: quiz.title,
+      viewer,
+    }));
+  });
+
+  await batch.commit();
+
+  return expiredQuizzes.map((quiz) => ({
+    ...quiz,
+    status: QUIZ_STATUSES.INACTIVE,
+    updatedAt: reconciledAt,
+    updatedBy: viewer.uid,
+  }));
+}
+
 export async function loadQuizManagementSnapshot(viewer) {
   requireQuizAdmin(viewer);
 
@@ -182,7 +248,12 @@ export async function loadQuizManagementSnapshot(viewer) {
     limit(500),
   ));
 
-  const quizzes = quizSnapshot.docs.map(mapQuizDocument).sort(sortByRecentUpdate);
+  const loadedQuizzes = quizSnapshot.docs.map(mapQuizDocument);
+  const reconciledQuizzes = await deactivateExpiredQuizzes(loadedQuizzes, viewer);
+  const reconciledById = new Map(reconciledQuizzes.map((quiz) => [quiz.id, quiz]));
+  const quizzes = loadedQuizzes
+    .map((quiz) => reconciledById.get(quiz.id) || quiz)
+    .sort(sortByRecentUpdate);
   const drafts = quizzes
     .filter((quiz) => quiz.createdBy === viewer.uid && quiz.status === QUIZ_STATUSES.DRAFT)
     .sort(sortByRecentUpdate);
@@ -338,17 +409,18 @@ export async function publishQuiz({ formState = null, quizId = null, viewer }) {
   requireQuizAdmin(viewer);
 
   const sourceFormState = formState || (await loadQuizForEditing({ quizId, viewer })).formState;
-  const payload = buildQuizPayloadFromForm(sourceFormState, QUIZ_STATUSES.ACTIVE);
+  const payload = {
+    ...buildQuizPayloadFromForm(sourceFormState, QUIZ_STATUSES.ACTIVE),
+    expireAt: getActivationExpiryDate(sourceFormState.expireAt),
+    publishAt: new Date(),
+    status: QUIZ_STATUSES.ACTIVE,
+  };
   const fieldErrors = validateQuizPayload(payload, { mode: 'publish' });
 
   throwIfFieldErrors(fieldErrors, 'Complete the required quiz fields before publishing.');
   await assertUniqueSlug(payload.slug, quizId);
 
-  const firestorePayload = toFirestoreQuizPayload({
-    ...payload,
-    publishAt: new Date(),
-    status: QUIZ_STATUSES.ACTIVE,
-  });
+  const firestorePayload = toFirestoreQuizPayload(payload);
   const quizReference = quizId ? getQuizReference(quizId) : doc(collection(db, QUIZZES_COLLECTION));
   const auditReference = doc(collection(db, AUDIT_LOGS_COLLECTION));
   const createAuditReference = quizId ? null : doc(collection(db, AUDIT_LOGS_COLLECTION));
@@ -409,22 +481,34 @@ export async function setQuizActiveState({ active, quizId, viewer }) {
   const action = active ? QUIZ_ACTIONS.ACTIVATE : QUIZ_ACTIONS.DEACTIVATE;
   const quizSnapshot = await loadQuizSnapshot(quizId);
   const quiz = mapQuizDocument(quizSnapshot);
+  const lifecyclePayload = {
+    status: nextStatus,
+    updatedAt: serverTimestamp(),
+    updatedBy: viewer.uid,
+  };
 
   if (active) {
-    const payload = buildQuizPayloadFromForm(quizToFormState(quiz), QUIZ_STATUSES.ACTIVE);
+    const expiryDate = getActivationExpiryDate(quiz.expireAt);
+    const payload = {
+      ...buildQuizPayloadFromForm({
+        ...quizToFormState(quiz),
+        expireAt: expiryDate,
+        publishAt: new Date(),
+      }, QUIZ_STATUSES.ACTIVE),
+      expireAt: expiryDate,
+      publishAt: new Date(),
+    };
     const fieldErrors = validateQuizPayload(payload, { mode: 'publish' });
     throwIfFieldErrors(fieldErrors, 'Complete the required quiz fields before activating.');
+    lifecyclePayload.expireAt = Timestamp.fromDate(expiryDate);
+    lifecyclePayload.publishAt = serverTimestamp();
   }
 
   const quizReference = getQuizReference(quizId);
   const auditReference = doc(collection(db, AUDIT_LOGS_COLLECTION));
 
   await runTransaction(db, async (transaction) => {
-    transaction.update(quizReference, {
-      status: nextStatus,
-      updatedAt: serverTimestamp(),
-      updatedBy: viewer.uid,
-    });
+    transaction.update(quizReference, lifecyclePayload);
 
     transaction.set(auditReference, buildAuditLogPayload({
       action,

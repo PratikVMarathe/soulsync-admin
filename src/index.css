@@ -2372,3 +2372,136 @@ a {
     font-size: 0.72rem;
   }
 }
+
+/* ─── Maṇḍala Updates – Search & Filter Toolbar ─────────────────────────── */
+
+.admin-mandala-filters {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.admin-mandala-search {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex: 1;
+  min-width: 220px;
+  padding: 0.68rem 0.9rem;
+  border: 1px solid rgba(54, 92, 78, 0.14);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.82);
+  color: var(--admin-text-soft);
+  transition: border-color 180ms ease, box-shadow 180ms ease;
+}
+
+.admin-mandala-search:focus-within {
+  border-color: rgba(47, 111, 85, 0.4);
+  box-shadow: 0 0 0 3px rgba(47, 111, 85, 0.07);
+  color: var(--admin-text);
+}
+
+.admin-mandala-search input {
+  flex: 1;
+  border: 0;
+  background: transparent;
+  color: var(--admin-text);
+  font-size: 0.95rem;
+  outline: none;
+}
+
+.admin-mandala-search input::placeholder {
+  color: var(--admin-text-soft);
+}
+
+.admin-mandala-search-clear {
+  border: 0;
+  background: transparent;
+  color: var(--admin-text-soft);
+  font-size: 1.2rem;
+  line-height: 1;
+  padding: 0;
+  cursor: pointer;
+  transition: color 160ms ease;
+}
+
+.admin-mandala-search-clear:hover {
+  color: var(--admin-text);
+}
+
+.admin-mandala-filter-selects {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
+.admin-mandala-filter-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--admin-text-soft);
+  white-space: nowrap;
+}
+
+.admin-mandala-filter-label select {
+  padding: 0.58rem 0.75rem;
+  border: 1px solid rgba(54, 92, 78, 0.14);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.82);
+  color: var(--admin-text);
+  font-size: 0.9rem;
+  font-weight: 600;
+  outline: none;
+  cursor: pointer;
+  transition: border-color 180ms ease, box-shadow 180ms ease;
+  min-height: 2.6rem;
+}
+
+.admin-mandala-filter-label select:focus {
+  border-color: rgba(47, 111, 85, 0.4);
+  box-shadow: 0 0 0 3px rgba(47, 111, 85, 0.07);
+}
+
+.admin-mandala-status-select {
+  padding: 0.48rem 0.65rem;
+  border: 1px solid rgba(54, 92, 78, 0.14);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.82);
+  color: var(--admin-text);
+  font-size: 0.88rem;
+  font-weight: 600;
+  outline: none;
+  cursor: pointer;
+  transition: border-color 180ms ease;
+}
+
+.admin-mandala-status-select:focus {
+  border-color: rgba(47, 111, 85, 0.4);
+}
+
+@media (max-width: 780px) {
+  .admin-mandala-filters {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .admin-mandala-filter-selects {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .admin-mandala-filter-label {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .admin-mandala-filter-label select {
+    width: 100%;
+  }
+}
+
