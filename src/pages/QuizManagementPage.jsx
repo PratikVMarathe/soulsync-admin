@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import AppStatusView from '../components/AppStatusView';
 import AdminIcon from '../components/AdminIcon';
+import QuizAnalytics from '../components/QuizAnalytics';
 import { USER_ROLES } from '../constants/auth';
 import {
   MAX_DRAFTS_PER_ADMIN,
@@ -224,6 +225,17 @@ function QuizCard({
         ) : null}
 
         <button
+          className="secondary-cta is-compact"
+          disabled={isBusy}
+          onClick={(event) => handleActionClick(event, 'analytics')}
+          aria-label={`View analytics for ${quiz.title || 'quiz'}`}
+          type="button"
+        >
+          <AdminIcon name="book" size={16} />
+          <span className="admin-action-label">View Analytics</span>
+        </button>
+
+        <button
           className="ghost-cta is-compact"
           disabled={isBusy}
           onClick={(event) => handleActionClick(event, 'delete')}
@@ -249,7 +261,24 @@ export default function QuizManagementPage({
   const [feedback, setFeedback] = useState({ error: '', success: '' });
   const isQuizAdmin = [USER_ROLES.ADMIN, USER_ROLES.SUPER_ADMIN].includes(viewer?.role);
 
-  const totalPages = Math.max(1, Math.ceil(data.quizzes.length / QUIZZES_PER_PAGE));
+  const [analyticsQuiz, setAnalyticsQuiz] = useState(null);
+
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState('ALL');
+
+  const filteredQuizzes = useMemo(() => {
+    return data.quizzes.filter((quiz) => {
+      const matchesStatus = statusFilter === 'ALL' || quiz.status === statusFilter || (!quiz.status && statusFilter === QUIZ_STATUSES.DRAFT);
+      const searchLower = searchQuery.toLowerCase();
+      const titleMatch = (quiz.title || '').toLowerCase().includes(searchLower);
+      const slugMatch = (quiz.slug || '').toLowerCase().includes(searchLower);
+      const descMatch = (quiz.description || '').toLowerCase().includes(searchLower);
+      const categoryMatch = (quiz.category || '').toLowerCase().includes(searchLower);
+      return matchesStatus && (titleMatch || slugMatch || descMatch || categoryMatch);
+    });
+  }, [data.quizzes, searchQuery, statusFilter]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredQuizzes.length / QUIZZES_PER_PAGE));
 
   useEffect(() => {
     if (page > totalPages) {
@@ -259,12 +288,17 @@ export default function QuizManagementPage({
 
   const visibleQuizzes = useMemo(() => {
     const start = (page - 1) * QUIZZES_PER_PAGE;
-    return data.quizzes.slice(start, start + QUIZZES_PER_PAGE);
-  }, [data.quizzes, page]);
+    return filteredQuizzes.slice(start, start + QUIZZES_PER_PAGE);
+  }, [filteredQuizzes, page]);
 
   const handleQuizAction = async (quiz, action) => {
     if (action === 'edit') {
       onEditQuiz(quiz.id);
+      return;
+    }
+    
+    if (action === 'analytics') {
+      setAnalyticsQuiz(quiz);
       return;
     }
 
@@ -334,6 +368,15 @@ export default function QuizManagementPage({
     );
   }
 
+  if (analyticsQuiz) {
+    return (
+      <QuizAnalytics 
+        quiz={analyticsQuiz} 
+        onBack={() => setAnalyticsQuiz(null)} 
+      />
+    );
+  }
+
   return (
     <div className="admin-dashboard admin-quiz-management-page">
       <section className="admin-page-hero">
@@ -367,8 +410,30 @@ export default function QuizManagementPage({
             <h2>Quiz Listing</h2>
             <p>Showing {QUIZZES_PER_PAGE} quizzes per page. Users only see quizzes with ACTIVE status.</p>
           </div>
-          <span className="admin-role-pill">{data.quizzes.length} Total</span>
+          <span className="admin-role-pill">{filteredQuizzes.length} Total</span>
         </header>
+
+        <div className="admin-analytics-filters" style={{ padding: '0 24px 16px', borderBottom: '1px solid #e5e7eb' }}>
+          <input
+            type="text"
+            className="admin-analytics-select"
+            placeholder="Search quizzes..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            style={{ marginRight: '12px', minWidth: '240px' }}
+          />
+          <select
+            className="admin-analytics-select"
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+          >
+            <option value="ALL">All Statuses</option>
+            <option value={QUIZ_STATUSES.ACTIVE}>Active</option>
+            <option value={QUIZ_STATUSES.DRAFT}>Draft</option>
+            <option value={QUIZ_STATUSES.INACTIVE}>Inactive</option>
+            <option value={QUIZ_STATUSES.EXPIRED}>Expired</option>
+          </select>
+        </div>
 
         {visibleQuizzes.length ? (
           <>
@@ -387,7 +452,7 @@ export default function QuizManagementPage({
             <Pagination
               currentPage={page}
               onPageChange={setPage}
-              totalItems={data.quizzes.length}
+              totalItems={filteredQuizzes.length}
               totalPages={totalPages}
             />
           </>
