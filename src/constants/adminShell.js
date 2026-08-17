@@ -4,7 +4,7 @@ export const SIDEBAR_ITEMS = [
   { key: 'dashboard', label: 'Dashboard', icon: 'home', route: '/admin' },
   { key: 'quiz-management', label: 'Quiz Management', icon: 'book', route: '/admin/quizzes' },
   { key: 'mandala-updates', label: 'Maṇḍala Updates', icon: 'lotus', route: '/admin/mandala', roles: [USER_ROLES.SUPER_ADMIN, USER_ROLES.ADMIN] },
-  { key: 'user-management', label: 'User Management', icon: 'users' },
+  { key: 'user-management', label: 'User Management', icon: 'users', route: '/admin/users' },
   { key: 'admin-management', label: 'Admin Management', icon: 'shield', route: '/admin/admins', roles: [USER_ROLES.SUPER_ADMIN] },
   // { key: 'analytics', label: 'Analytics', icon: 'chart' },
   // { key: 'settings', label: 'Settings', icon: 'settings' },
@@ -50,7 +50,7 @@ export const ACTION_MESSAGES = {
   profile: 'Admin profile settings will be connected in the next phase.',
   'quiz-management': 'Opening Quiz Management.',
   settings: 'Settings are not available yet. The shell is ready for the upcoming configuration screens.',
-  'user-management': 'User management actions will land in the next phase once backend moderation workflows are connected.',
+  'user-management': 'Opening User Management.',
   'view-reports': 'Reports are still preview-only. They will be connected after analytics collections are ready.',
-  'view-users': 'The full user management screen is coming next. For now, use the overview table on the dashboard.',
+  'view-users': 'Opening User Management.',
 };

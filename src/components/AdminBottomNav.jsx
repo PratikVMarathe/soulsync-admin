@@ -5,8 +5,10 @@ const bottomNavItems = [
   { key: 'home', label: 'Home', icon: 'home', route: '/admin' },
   { key: 'admins', label: 'Admins', icon: 'shield', route: '/admin/admins' },
   { key: 'quizzes', label: 'Quizzes', icon: 'book', route: '/admin/quizzes' },
-  { key: 'users', label: 'Users', icon: 'users', actionKey: 'user-management' },
-  { key: 'profile', label: 'Profile', icon: 'profile', route: '/admin/profile' },
+  { key: 'users', label: 'Users', icon: 'users', route: '/admin/users' },
+  // { key: 'profile', label: 'Profile', icon: 'profile', route: '/admin/profile' },
+  { key: 'mandala-updates', label: 'Maṇḍala', icon: 'lotus', route: '/admin/mandala'},
+
 ];
 
 export default function AdminBottomNav({
@@ -16,15 +18,17 @@ export default function AdminBottomNav({
   const location = useLocation();
   const navigate = useNavigate();
 
-  const activeKey = location.pathname.startsWith('/admin/profile')
-    ? 'profile'
+  const activeKey = location.pathname.startsWith('/admin/mandala')
+    ? 'mandala-updates'
     : location.pathname.startsWith('/admin/quizzes')
       ? 'quizzes'
     : location.pathname.startsWith('/admin/admins')
       ? 'admins'
+    : location.pathname.startsWith('/admin/users')
+      ? 'users'
     : location.pathname.startsWith('/admin')
       ? 'home'
-      : 'admins';
+      : 'home';
 
   const handleSelect = (item) => {
     if (item.key === 'home') {

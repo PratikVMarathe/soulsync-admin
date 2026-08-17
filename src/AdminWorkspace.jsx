@@ -14,6 +14,9 @@ import MandalaOpportunityEditorPage from './pages/MandalaOpportunityEditorPage';
 import MandalaUpdatesPage from './pages/MandalaUpdatesPage';
 import QuizEditorPage from './pages/QuizEditorPage';
 import QuizManagementPage from './pages/QuizManagementPage';
+import UserDetailsPage from './pages/UserDetailsPage';
+import UserEditPage from './pages/UserEditPage';
+import UserManagementPage from './pages/UserManagementPage';
 import AppStatusView from './components/AppStatusView';
 
 export default function AdminWorkspace({
@@ -41,6 +44,11 @@ export default function AdminWorkspace({
   const isCreateQuizRoute = normalizedPath === '/admin/quizzes/create';
   const editQuizMatch = normalizedPath.match(/^\/admin\/quizzes\/([^/]+)\/edit$/);
   const editingQuizId = editQuizMatch?.[1] || null;
+  const isUserManagementRoute = normalizedPath === '/admin/users';
+  const userEditMatch = normalizedPath.match(/^\/admin\/users\/([^/]+)\/edit$/);
+  const editingUserId = userEditMatch?.[1] || null;
+  const userDetailsMatch = normalizedPath.match(/^\/admin\/users\/([^/]+)$/);
+  const viewingUserId = userDetailsMatch?.[1] || null;
 
   const handlePlaceholderAction = useCallback((actionKey) => {
     if (actionKey === 'profile') {
@@ -68,6 +76,11 @@ export default function AdminWorkspace({
       return;
     }
 
+    if (actionKey === 'user-management' || actionKey === 'view-users') {
+      navigate('/admin/users');
+      return;
+    }
+
     if (actionKey === 'create-quiz') {
       navigate('/admin/quizzes/create');
       return;
@@ -92,7 +105,9 @@ export default function AdminWorkspace({
         ? 'quiz-management'
         : normalizedPath.startsWith('/admin/admins')
           ? 'admin-management'
-          : 'dashboard';
+          : normalizedPath.startsWith('/admin/users')
+            ? 'user-management'
+            : 'dashboard';
 
   return (
     <AppErrorBoundary
@@ -179,6 +194,26 @@ export default function AdminWorkspace({
             viewer={viewer}
           />
         ) : null}
+        {isUserManagementRoute ? (
+          <UserManagementPage
+            onViewUser={(userId) => navigate(`/admin/users/${userId}`)}
+            viewer={viewer}
+          />
+        ) : null}
+        {editingUserId ? (
+          <UserEditPage
+            onBack={() => navigate(`/admin/users/${editingUserId}`)}
+            uid={editingUserId}
+            viewer={viewer}
+          />
+        ) : null}
+        {viewingUserId && !editingUserId ? (
+          <UserDetailsPage
+            onBack={() => navigate('/admin/users')}
+            uid={viewingUserId}
+            viewer={viewer}
+          />
+        ) : null}
         {isProfileRoute ? <AdminProfilePage onUserChange={onUserChange} viewer={viewer} /> : null}
         {!isDashboardRoute
           && !isProfileRoute
@@ -190,7 +225,10 @@ export default function AdminWorkspace({
           && !editingAdminId
           && !isQuizManagementRoute
           && !isCreateQuizRoute
-          && !editingQuizId ? (
+          && !editingQuizId
+          && !isUserManagementRoute
+          && !viewingUserId
+          && !editingUserId ? (
           <AppStatusView
             state={{
               message: 'The admin page you requested does not exist.',
