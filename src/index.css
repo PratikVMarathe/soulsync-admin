@@ -2961,6 +2961,7 @@ a {
   border: 1px solid var(--admin-border);
   border-radius: 14px;
   box-shadow: 0 8px 24px rgba(68, 72, 55, 0.14);
+  right: 0px;
 }
 
 .user-status-filter-dropdown-item {
@@ -2989,10 +2990,12 @@ a {
   .user-status-filter.is-desktop {
     display: none;
   }
+
   .user-status-filter.is-mobile {
     display: block;
   }
 }
+
 /* Pagination label */
 .user-pagination-label {
   font-size: 0.82rem;
@@ -3510,6 +3513,7 @@ a {
     opacity: 0;
     transform: scale(0.95) translateY(10px);
   }
+
   to {
     opacity: 1;
     transform: scale(1) translateY(0);

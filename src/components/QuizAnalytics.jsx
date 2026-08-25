@@ -197,11 +197,6 @@ export default function QuizAnalytics({ quiz, onBack }) {
     return (
       <div className="admin-dashboard admin-quiz-management-page">
         <section className="admin-page-hero">
-          <div className="admin-page-hero-copy">
-            <span className="admin-badge">Attempt Details</span>
-            <h1>{selectedUser.userName}'s Attempt</h1>
-            <p>Score: {selectedAttempt.score} / {selectedAttempt.totalQuestions} • {selectedAttempt.percentage}%</p>
-          </div>
           <div className="admin-page-hero-actions">
 
             <button className="secondary-cta is-compact" onClick={() => setSelectedAttempt(null)}>
@@ -209,6 +204,12 @@ export default function QuizAnalytics({ quiz, onBack }) {
               <span>Back to History</span>
             </button>
           </div>
+          <div className="admin-page-hero-copy">
+            <span className="admin-badge">Attempt Details</span>
+            <h1>{selectedUser.userName}'s Attempt</h1>
+            <p>Score: {selectedAttempt.score} / {selectedAttempt.totalQuestions} • {selectedAttempt.percentage}%</p>
+          </div>
+
         </section>
 
         <section className="admin-panel admin-analytics-panel">
@@ -334,16 +335,16 @@ export default function QuizAnalytics({ quiz, onBack }) {
   return (
     <div className="admin-dashboard admin-quiz-management-page">
       <section className="admin-page-hero">
-        <div className="admin-page-hero-copy">
-          <span className="admin-badge">Quiz Analytics</span>
-          <h1>{quiz.title}</h1>
-          <p>Overall performance and engagement metrics.</p>
-        </div>
         <div className="admin-page-hero-actions">
           <button className="secondary-cta is-compact" onClick={onBack}>
             <AdminIcon name="arrowLeft" size={16} />
             <span>Back to Quizzes</span>
           </button>
+        </div>
+        <div className="admin-page-hero-copy">
+          <span className="admin-badge">Quiz Analytics</span>
+          <h1>{quiz.title}</h1>
+          <p>Overall performance and engagement metrics.</p>
         </div>
       </section>
 

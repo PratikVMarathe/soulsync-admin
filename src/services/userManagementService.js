@@ -340,7 +340,7 @@ export async function updateUserPhone({ uid, phoneNumber, viewer }) {
           releasedBy: viewer.uid,
           status: IDENTITY_LOCK_STATUSES.RELEASED,
           updatedAt: serverTimestamp(),
-        }, { merge: true });
+        });
       }
     }
 
@@ -355,7 +355,7 @@ export async function updateUserPhone({ uid, phoneNumber, viewer }) {
         phoneNumber: normalizedPhone,
         reason: IDENTITY_LOCK_REASONS.ACTIVE_ACCOUNT,
         uid,
-      }), { merge: true });
+      }));
     }
 
     transaction.update(userRef, {
@@ -409,7 +409,7 @@ export async function blockUser({ uid, viewer }) {
         phoneNumber: profile.phoneNumber,
         reason: IDENTITY_LOCK_REASONS.BLOCKED_ACCOUNT,
         uid,
-      }), { merge: true });
+      }));
     }
 
     transaction.update(userRef, {
@@ -463,7 +463,7 @@ export async function unblockUser({ uid, viewer }) {
         phoneNumber: profile.phoneNumber,
         reason: IDENTITY_LOCK_REASONS.ACTIVE_ACCOUNT,
         uid,
-      }), { merge: true });
+      }));
     }
 
     transaction.update(userRef, {

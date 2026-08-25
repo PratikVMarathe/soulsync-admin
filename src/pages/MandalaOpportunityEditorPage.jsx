@@ -175,6 +175,11 @@ export default function MandalaOpportunityEditorPage({
     <div className="admin-profile-page admin-quiz-editor-page">
       {/* Page Header */}
       <section className="admin-profile-hero admin-admin-hero">
+        <div className="admin-page-hero-actions">
+          <button className="secondary-cta is-compact" onClick={onBack} type="button">
+            Back to Maṇḍala Updates
+          </button>
+        </div>
         <div className="admin-profile-identity-copy">
           <span className="admin-profile-eyebrow">Maṇḍala Updates</span>
           <h1>{isEditing ? 'Edit Opportunity' : 'Create Opportunity'}</h1>
@@ -183,12 +188,6 @@ export default function MandalaOpportunityEditorPage({
               ? 'Update details for this Satsang Central class, event, or festival.'
               : 'Add a new spiritual opportunity visible to users on Satsang Central.'}
           </p>
-        </div>
-
-        <div className="admin-page-hero-actions">
-          <button className="secondary-cta is-compact" onClick={onBack} type="button">
-            Back to Maṇḍala Updates
-          </button>
         </div>
       </section>
 

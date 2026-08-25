@@ -32,6 +32,9 @@ export default defineConfig(({ mode }) => {
       headers: authPopupHeaders,
       port: devPort,
       strictPort: true,
+      hmr: {
+        port: devPort,
+      },
     },
     preview: {
       headers: authPopupHeaders,
