@@ -158,6 +158,11 @@ export default function AdminCreateInvitePage({ onBack, viewer }) {
   return (
     <div className="admin-profile-page">
       <section className="admin-profile-hero admin-admin-hero">
+        <div className="admin-page-hero-actions">
+          <button className="secondary-cta is-compact" onClick={onBack} type="button">
+            Back to Admins
+          </button>
+        </div>
         <div className="admin-profile-identity-copy">
           <span className="admin-profile-eyebrow">Admin Management</span>
           <h1>Create Admin Invite</h1>
@@ -165,12 +170,6 @@ export default function AdminCreateInvitePage({ onBack, viewer }) {
             Reserve an email and phone number for a future admin. Once invited, that identity
             cannot register as a normal user.
           </p>
-        </div>
-
-        <div className="admin-page-hero-actions">
-          <button className="secondary-cta is-compact" onClick={onBack} type="button">
-            Back to Admins
-          </button>
         </div>
       </section>
 

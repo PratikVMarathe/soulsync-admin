@@ -143,6 +143,22 @@ const icons = {
       <path d="m21 21-4.3-4.3" />
     </>
   ),
+  profile: (
+    <>
+      <circle cx="12" cy="8" r="4" />
+      <path d="M4 21a8 8 0 0 1 16 0" />
+    </>
+  ),
+  ellipsisVertical: (
+    <>
+      <circle cx="12" cy="12" r="1.5" />
+      <circle cx="12" cy="5" r="1.5" />
+      <circle cx="12" cy="19" r="1.5" />
+    </>
+  ),
+  filter: (
+    <path d="M22 3H2l8 9.46V19l4 2v-8.54L22 3z" />
+  ),
 };
 
 export default function AdminIcon({ className = '', name, size = 24 }) {

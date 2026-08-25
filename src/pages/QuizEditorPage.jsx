@@ -71,10 +71,10 @@ export default function QuizEditorPage({
           getDraftLimitState({ excludeQuizId: quizId, viewer }),
           isEditing
             ? loadQuizForEditing({
-                quizId,
-                recordResume: !hasLoggedResume.current,
-                viewer,
-              })
+              quizId,
+              recordResume: !hasLoggedResume.current,
+              viewer,
+            })
             : Promise.resolve(null),
         ]);
 
@@ -322,6 +322,11 @@ export default function QuizEditorPage({
   return (
     <div className="admin-profile-page admin-quiz-editor-page">
       <section className="admin-profile-hero admin-admin-hero">
+        <div className="admin-page-hero-actions">
+          <button className="secondary-cta is-compact" onClick={onBack} type="button">
+            Back to Quizzes
+          </button>
+        </div>
         <div className="admin-profile-identity-copy">
           <span className="admin-profile-eyebrow">Quiz Management</span>
           <h1>{isEditing ? 'Edit Quiz' : 'Create Quiz'}</h1>
@@ -329,12 +334,6 @@ export default function QuizEditorPage({
             Build a concept quiz with clean slug routing, scripture references, and timer-safe
             questions.
           </p>
-        </div>
-
-        <div className="admin-page-hero-actions">
-          <button className="secondary-cta is-compact" onClick={onBack} type="button">
-            Back to Quizzes
-          </button>
         </div>
       </section>
 

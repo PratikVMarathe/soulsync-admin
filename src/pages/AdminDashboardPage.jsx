@@ -168,7 +168,7 @@ function AdminManagementPanel({ admins, onAction }) {
                 </td>
                 <td data-label="Email">{admin.email || 'Not set'}</td>
                 <td data-label="Status">
-                  <span className="admin-status-pill is-success">{admin.status || 'ACTIVE'}</span>
+                  {/* <span className="admin-status-pill is-success">{admin.status || 'ACTIVE'}</span> */}
                 </td>
               </tr>
             ))}
