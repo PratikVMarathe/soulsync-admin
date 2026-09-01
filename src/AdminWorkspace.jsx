@@ -1,10 +1,11 @@
-import { useCallback } from 'react';
+import { useCallback, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import AppErrorBoundary from './components/AppErrorBoundary';
 import AppNoticeCenter from './components/AppNoticeCenter';
 import AdminLayout from './components/AdminLayout';
 import { ACTION_MESSAGES } from './constants/adminShell';
 import { useAppNotice } from './hooks/useAppNotice';
+import { warmupImageApi } from './services/cloudinaryService';
 import AdminCreateInvitePage from './pages/AdminCreateInvitePage';
 import AdminDashboardPage from './pages/AdminDashboardPage';
 import AdminEditManagedProfilePage from './pages/AdminEditManagedProfilePage';
@@ -12,6 +13,7 @@ import AdminManagementPage from './pages/AdminManagementPage';
 import AdminProfilePage from './pages/AdminProfilePage';
 import MandalaOpportunityEditorPage from './pages/MandalaOpportunityEditorPage';
 import MandalaUpdatesPage from './pages/MandalaUpdatesPage';
+import QuizBulkUploadPage from './pages/QuizBulkUploadPage';
 import QuizEditorPage from './pages/QuizEditorPage';
 import QuizManagementPage from './pages/QuizManagementPage';
 import UserDetailsPage from './pages/UserDetailsPage';
@@ -29,6 +31,12 @@ export default function AdminWorkspace({
   const location = useLocation();
   const navigate = useNavigate();
   const { showNotice } = useAppNotice();
+
+  // Opportunistically wake Render image API in background upon Admin loading
+  useEffect(() => {
+    warmupImageApi();
+  }, []);
+
   const normalizedPath = location.pathname.replace(/\/+$/, '') || '/admin';
   const isProfileRoute = normalizedPath === '/admin/profile';
   const isDashboardRoute = normalizedPath === '/admin';
@@ -41,6 +49,7 @@ export default function AdminWorkspace({
   const editAdminMatch = normalizedPath.match(/^\/admin\/admins\/([^/]+)\/edit$/);
   const editingAdminId = editAdminMatch?.[1] || null;
   const isQuizManagementRoute = normalizedPath === '/admin/quizzes';
+  const isBulkUploadQuizRoute = normalizedPath === '/admin/quizzes/bulk';
   const isCreateQuizRoute = normalizedPath === '/admin/quizzes/create';
   const editQuizMatch = normalizedPath.match(/^\/admin\/quizzes\/([^/]+)\/edit$/);
   const editingQuizId = editQuizMatch?.[1] || null;
@@ -168,8 +177,16 @@ export default function AdminWorkspace({
         ) : null}
         {isQuizManagementRoute ? (
           <QuizManagementPage
+            onBulkUploadQuiz={() => navigate('/admin/quizzes/bulk')}
             onCreateQuiz={() => navigate('/admin/quizzes/create')}
             onEditQuiz={(quizId) => navigate(`/admin/quizzes/${quizId}/edit`)}
+            viewer={viewer}
+          />
+        ) : null}
+        {isBulkUploadQuizRoute ? (
+          <QuizBulkUploadPage
+            onBack={() => navigate('/admin/quizzes')}
+            onSaved={() => navigate('/admin/quizzes')}
             viewer={viewer}
           />
         ) : null}
@@ -224,6 +241,7 @@ export default function AdminWorkspace({
           && !isCreateAdminRoute
           && !editingAdminId
           && !isQuizManagementRoute
+          && !isBulkUploadQuizRoute
           && !isCreateQuizRoute
           && !editingQuizId
           && !isUserManagementRoute

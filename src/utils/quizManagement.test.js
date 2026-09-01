@@ -4,10 +4,12 @@ import {
   getRemainingQuestionTime,
   getQuestionTimeLimit,
   getTotalQuestionTime,
+  isQuestionComplete,
   normalizeQuizLevel,
   normalizeQuizStatus,
   slugifyQuizTitle,
   validateQuizPayload,
+  validateSingleQuestion,
 } from './quizManagement';
 
 // ─── slugifyQuizTitle ─────────────────────────────────────────────────────────
@@ -386,3 +388,66 @@ describe('validateQuizPayload — publish mode', () => {
     expect(errors).toHaveProperty('question-0-time');
   });
 });
+
+// ─── validateSingleQuestion & isQuestionComplete ──────────────────────────────
+
+describe('validateSingleQuestion', () => {
+  const validQuestion = {
+    text: 'What is karma yoga?',
+    options: ['Action without attachment', 'Inaction', 'Selfish action', 'None of above'],
+    correctIndex: 0,
+    time: 30,
+  };
+
+  it('returns empty errors for a valid question', () => {
+    const errors = validateSingleQuestion(validQuestion, 0);
+    expect(Object.keys(errors)).toHaveLength(0);
+  });
+
+  it('flags missing question text', () => {
+    const errors = validateSingleQuestion({ ...validQuestion, text: '' }, 2);
+    expect(errors['question-2-text']).toBe('Question 3 text is required.');
+  });
+
+  it('flags incomplete options', () => {
+    const errors = validateSingleQuestion({ ...validQuestion, options: ['A', '', 'C', 'D'] }, 1);
+    expect(errors['question-1-options']).toBe('Question 2 must have exactly 4 options.');
+  });
+
+  it('flags invalid correctIndex', () => {
+    const errors = validateSingleQuestion({ ...validQuestion, correctIndex: 4 }, 0);
+    expect(errors['question-0-correctIndex']).toBe('Question 1 needs one correct answer.');
+  });
+
+  it('flags non-positive timer', () => {
+    const errors = validateSingleQuestion({ ...validQuestion, time: 0 }, 0);
+    expect(errors['question-0-time']).toBe('Question 1 timer must be greater than 0.');
+  });
+});
+
+describe('isQuestionComplete', () => {
+  const completeQ = {
+    text: 'What is karma yoga?',
+    options: ['A', 'B', 'C', 'D'],
+    correctIndex: 1,
+    time: 25,
+  };
+
+  it('returns true for complete question', () => {
+    expect(isQuestionComplete(completeQ)).toBe(true);
+  });
+
+  it('returns false for question with empty text', () => {
+    expect(isQuestionComplete({ ...completeQ, text: '   ' })).toBe(false);
+  });
+
+  it('returns false for question with empty option', () => {
+    expect(isQuestionComplete({ ...completeQ, options: ['A', '', 'C', 'D'] })).toBe(false);
+  });
+
+  it('returns false for null or undefined question', () => {
+    expect(isQuestionComplete(null)).toBe(false);
+    expect(isQuestionComplete(undefined)).toBe(false);
+  });
+});
+

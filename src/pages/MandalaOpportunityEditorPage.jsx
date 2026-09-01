@@ -1,6 +1,15 @@
 import { useEffect, useState } from 'react';
 import AdminIcon from '../components/AdminIcon';
 import AppStatusView from '../components/AppStatusView';
+import ImagePreviewDialog from '../components/ImagePreviewDialog';
+import ImageUploadDialog from '../components/ImageUploadDialog';
+import {
+  DEFAULT_SOCIAL_LINKS,
+  SOCIAL_PLATFORM_CONFIG,
+  SOCIAL_PLATFORM_OPTIONS,
+  normalizeSocialLinks,
+} from '../constants/socialMedia';
+import { UPLOAD_FOLDERS } from '../constants/upload';
 import {
   SATSANG_CATEGORIES,
   SATSANG_STATUSES,
@@ -34,6 +43,8 @@ export default function MandalaOpportunityEditorPage({
   const [error, setError] = useState(null);
   const [fieldErrors, setFieldErrors] = useState({});
   const [feedback, setFeedback] = useState({ error: '', success: '' });
+  const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false);
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
 
   const [formState, setFormState] = useState({
     title: '',
@@ -47,6 +58,10 @@ export default function MandalaOpportunityEditorPage({
     startAt: '',
     endAt: '',
   });
+
+  const [socialLinkEntries, setSocialLinkEntries] = useState([
+    { platform: 'whatsapp', url: '' },
+  ]);
 
   useEffect(() => {
     if (!isEditing) {
@@ -86,6 +101,16 @@ export default function MandalaOpportunityEditorPage({
           startAt: formatTimestampForInput(opp.startAt),
           endAt: formatTimestampForInput(opp.endAt),
         });
+
+        const normalizedSocial = normalizeSocialLinks(opp.socialLinks);
+        const entries = [];
+        const platformKeys = ['whatsapp', 'instagram', 'youtube', 'facebook', 'telegram'];
+        for (const p of platformKeys) {
+          if (normalizedSocial[p]) {
+            entries.push({ platform: p, url: normalizedSocial[p] });
+          }
+        }
+        setSocialLinkEntries(entries.length > 0 ? entries : [{ platform: 'whatsapp', url: '' }]);
       } catch (err) {
         console.error('Failed to load opportunity:', err);
         if (isMounted) {
@@ -117,6 +142,41 @@ export default function MandalaOpportunityEditorPage({
     setFeedback({ error: '', success: '' });
   };
 
+  const handleAddSocialLink = () => {
+    if (socialLinkEntries.length >= 5) return;
+    const usedPlatforms = new Set(socialLinkEntries.map((e) => e.platform));
+    const allPlatforms = ['whatsapp', 'instagram', 'youtube', 'facebook', 'telegram'];
+    const nextPlatform = allPlatforms.find((p) => !usedPlatforms.has(p)) || 'whatsapp';
+    setSocialLinkEntries((prev) => [...prev, { platform: nextPlatform, url: '' }]);
+  };
+
+  const handleRemoveSocialLink = (index) => {
+    if (socialLinkEntries.length <= 1) return;
+    setSocialLinkEntries((prev) => prev.filter((_, i) => i !== index));
+    setFieldErrors((prev) => {
+      const next = { ...prev };
+      delete next[`socialLinks.${index}`];
+      return next;
+    });
+    setFeedback({ error: '', success: '' });
+  };
+
+  const handleSocialPlatformChange = (index, newPlatform) => {
+    setSocialLinkEntries((prev) => prev.map((entry, i) => (
+      i === index ? { ...entry, platform: newPlatform } : entry
+    )));
+    setFieldErrors((prev) => ({ ...prev, [`socialLinks.${index}`]: '' }));
+    setFeedback({ error: '', success: '' });
+  };
+
+  const handleSocialUrlChange = (index, newUrl) => {
+    setSocialLinkEntries((prev) => prev.map((entry, i) => (
+      i === index ? { ...entry, url: newUrl } : entry
+    )));
+    setFieldErrors((prev) => ({ ...prev, [`socialLinks.${index}`]: '' }));
+    setFeedback({ error: '', success: '' });
+  };
+
   const handleSubmit = async (action) => {
     setFieldErrors({});
     setFeedback({ error: '', success: '' });
@@ -126,14 +186,48 @@ export default function MandalaOpportunityEditorPage({
       return;
     }
 
+    // Validate social links
+    const socialLinksPayload = { ...DEFAULT_SOCIAL_LINKS };
+    const linkErrors = {};
+    const usedPlatforms = new Set();
+
+    socialLinkEntries.forEach((entry, index) => {
+      const trimmedUrl = (entry.url || '').trim();
+      if (trimmedUrl) {
+        if (usedPlatforms.has(entry.platform)) {
+          linkErrors[`socialLinks.${index}`] = `Duplicate platform: ${SOCIAL_PLATFORM_CONFIG[entry.platform]?.label || entry.platform}`;
+        } else {
+          usedPlatforms.add(entry.platform);
+        }
+
+        const config = SOCIAL_PLATFORM_CONFIG[entry.platform];
+        if (config && !config.validate(trimmedUrl)) {
+          linkErrors[`socialLinks.${index}`] = config.errorMsg;
+        } else {
+          socialLinksPayload[entry.platform] = trimmedUrl;
+        }
+      }
+    });
+
+    if (Object.keys(linkErrors).length > 0) {
+      setFieldErrors((prev) => ({ ...prev, ...linkErrors }));
+      setFeedback({ error: 'Please correct the social media URL errors before saving.', success: '' });
+      return;
+    }
+
     setSaving(action);
+
+    const payload = {
+      ...formState,
+      socialLinks: socialLinksPayload,
+    };
 
     try {
       if (isEditing) {
-        await updateSatsangOpportunity(viewer, opportunityId, formState);
+        await updateSatsangOpportunity(viewer, opportunityId, payload);
         setFeedback({ error: '', success: 'Opportunity updated successfully.' });
       } else {
-        await createSatsangOpportunity(viewer, formState);
+        await createSatsangOpportunity(viewer, payload);
         setFeedback({ error: '', success: 'Opportunity created successfully.' });
       }
 
@@ -209,7 +303,7 @@ export default function MandalaOpportunityEditorPage({
 
         <div className="admin-profile-form-grid">
           <label className="admin-profile-field">
-            <span>Opportunity Title *</span>
+            <span>Opportunity Title <span className="admin-required-indicator">*</span></span>
             <input
               name="title"
               onChange={handleChange}
@@ -221,7 +315,7 @@ export default function MandalaOpportunityEditorPage({
           </label>
 
           <label className="admin-profile-field">
-            <span>Category *</span>
+            <span>Category <span className="admin-required-indicator">*</span></span>
             <select
               name="category"
               onChange={handleChange}
@@ -234,7 +328,7 @@ export default function MandalaOpportunityEditorPage({
           </label>
 
           <label className="admin-profile-field">
-            <span>Status *</span>
+            <span>Status <span className="admin-required-indicator">*</span></span>
             <select
               name="status"
               onChange={handleChange}
@@ -266,16 +360,38 @@ export default function MandalaOpportunityEditorPage({
         </div>
 
         <div className="admin-profile-form-grid">
-          <label className="admin-profile-field">
+          <div className="admin-profile-field admin-image-field-group">
             <span>Image URL</span>
-            <input
-              name="imageUrl"
-              onChange={handleChange}
-              placeholder="https://..."
-              type="url"
-              value={formState.imageUrl}
-            />
-          </label>
+            <div className="admin-image-input-row">
+              <input
+                name="imageUrl"
+                onChange={handleChange}
+                placeholder="https://..."
+                type="url"
+                value={formState.imageUrl}
+              />
+              <div className="admin-image-actions-row">
+                <button
+                  className="secondary-cta is-compact"
+                  onClick={() => setIsUploadDialogOpen(true)}
+                  type="button"
+                >
+                  <AdminIcon name="uploadCloud" size={16} />
+                  <span>Upload Image</span>
+                </button>
+                <button
+                  className="secondary-cta is-compact"
+                  disabled={!formState.imageUrl}
+                  onClick={() => setIsPreviewOpen(true)}
+                  type="button"
+                >
+                  <AdminIcon name="eye" size={16} />
+                  <span>Preview</span>
+                </button>
+              </div>
+            </div>
+            <FieldError message={fieldErrors.imageUrl} />
+          </div>
 
           <label className="admin-profile-field">
             <span>Image Alt Text</span>
@@ -289,7 +405,7 @@ export default function MandalaOpportunityEditorPage({
           </label>
 
           <label className="admin-profile-field">
-            <span>Physical Location</span>
+            <span>Time and Location</span>
             <input
               name="location"
               onChange={handleChange}
@@ -312,7 +428,72 @@ export default function MandalaOpportunityEditorPage({
         </div>
       </section>
 
-      {/* Section 3: Schedule */}
+      {/* Section 3: Social Media & Community */}
+      <section className="admin-panel admin-profile-form-shell admin-quiz-editor-shell">
+        <div className="admin-profile-section-heading admin-section-heading-with-action">
+          <div>
+            <h2>Social Media & Community</h2>
+            <p>Optionally provide social or community links where users can connect and stay updated.</p>
+          </div>
+          {socialLinkEntries.length < 5 ? (
+            <button
+              className="secondary-cta is-compact"
+              onClick={handleAddSocialLink}
+              type="button"
+            >
+              <AdminIcon name="plus" size={16} />
+              <span>Add Link</span>
+            </button>
+          ) : null}
+        </div>
+
+        <div className="admin-social-links-list">
+          {socialLinkEntries.map((entry, index) => (
+            <div className="admin-social-link-row" key={`social-link-${index}`}>
+              <div className="admin-social-link-select-group">
+                <select
+                  aria-label="Select social media platform"
+                  className="admin-social-select"
+                  onChange={(e) => handleSocialPlatformChange(index, e.target.value)}
+                  value={entry.platform}
+                >
+                  {SOCIAL_PLATFORM_OPTIONS.map((opt) => (
+                    <option key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="admin-social-link-input-group">
+                <input
+                  aria-label={`${SOCIAL_PLATFORM_CONFIG[entry.platform]?.label || 'Social media'} URL`}
+                  className={`admin-social-input ${fieldErrors[`socialLinks.${index}`] ? 'is-invalid' : ''}`}
+                  onChange={(e) => handleSocialUrlChange(index, e.target.value)}
+                  placeholder={SOCIAL_PLATFORM_CONFIG[entry.platform]?.placeholder || 'https://...'}
+                  type="url"
+                  value={entry.url}
+                />
+                <FieldError message={fieldErrors[`socialLinks.${index}`]} />
+              </div>
+
+              {socialLinkEntries.length > 1 ? (
+                <button
+                  aria-label={`Remove ${SOCIAL_PLATFORM_CONFIG[entry.platform]?.label || 'social'} link`}
+                  className="secondary-cta is-compact admin-social-delete-btn"
+                  onClick={() => handleRemoveSocialLink(index)}
+                  title="Remove link"
+                  type="button"
+                >
+                  <AdminIcon name="trash" size={16} />
+                </button>
+              ) : null}
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Section 4: Schedule */}
       <section className="admin-panel admin-profile-form-shell admin-quiz-editor-shell">
         <div className="admin-profile-section-heading">
           <h2>Schedule & Timings</h2>
@@ -343,6 +524,27 @@ export default function MandalaOpportunityEditorPage({
           <div className="admin-form-empty-slot" />
         </div>
       </section>
+
+      {/* Image Preview Modal */}
+      <ImagePreviewDialog
+        isOpen={isPreviewOpen}
+        onClose={() => setIsPreviewOpen(false)}
+        title="Maṇḍala Cover Image Preview"
+        url={formState.imageUrl}
+      />
+
+      {/* Image Upload Modal */}
+      <ImageUploadDialog
+        folder={UPLOAD_FOLDERS.MANDALA}
+        isOpen={isUploadDialogOpen}
+        onClose={() => setIsUploadDialogOpen(false)}
+        onSuccess={(url) => {
+          setFormState((prev) => ({ ...prev, imageUrl: url }));
+          setFieldErrors((prev) => ({ ...prev, imageUrl: '' }));
+        }}
+        title="Upload Opportunity Image"
+        viewer={viewer}
+      />
 
       {/* Sticky Footer Actions */}
       <div className="admin-quiz-editor-actions">

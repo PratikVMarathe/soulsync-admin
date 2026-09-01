@@ -8,6 +8,7 @@ import {
   serverTimestamp,
 } from 'firebase/firestore';
 import { USER_ROLES } from '../constants/auth';
+import { normalizeSocialLinks, validateSocialLinks } from '../constants/socialMedia';
 import { db } from '../config/firebase';
 
 const SATSANG_COLLECTION = 'satsangCentral';
@@ -64,10 +65,14 @@ export async function fetchSatsangOpportunities(viewer) {
   requireAdmin(viewer);
 
   const querySnapshot = await getDocs(collection(db, SATSANG_COLLECTION));
-  const opportunities = querySnapshot.docs.map((docSnap) => ({
-    id: docSnap.id,
-    ...docSnap.data(),
-  }));
+  const opportunities = querySnapshot.docs.map((docSnap) => {
+    const data = docSnap.data();
+    return {
+      id: docSnap.id,
+      ...data,
+      socialLinks: normalizeSocialLinks(data.socialLinks),
+    };
+  });
 
   return opportunities.sort((left, right) => {
     const leftTime = left.updatedAt?.seconds || left.createdAt?.seconds || 0;
@@ -87,6 +92,13 @@ export async function createSatsangOpportunity(viewer, payload) {
     throw new MandalaAdminError('invalid-title', 'Title is required.');
   }
 
+  const socialLinks = normalizeSocialLinks(payload.socialLinks);
+  const socialErrors = validateSocialLinks(socialLinks);
+  if (Object.keys(socialErrors).length > 0) {
+    const firstError = Object.values(socialErrors)[0];
+    throw new MandalaAdminError('invalid-social-links', firstError);
+  }
+
   const newRef = doc(collection(db, SATSANG_COLLECTION));
   const auditRef = doc(collection(db, AUDIT_LOGS_COLLECTION));
 
@@ -100,6 +112,7 @@ export async function createSatsangOpportunity(viewer, payload) {
     meetingLink: (payload.meetingLink || '').trim(),
     startAt: toTimestamp(payload.startAt),
     endAt: toTimestamp(payload.endAt),
+    socialLinks,
     status,
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
@@ -138,6 +151,13 @@ export async function updateSatsangOpportunity(viewer, opportunityId, payload) {
     throw new MandalaAdminError('invalid-title', 'Title is required.');
   }
 
+  const socialLinks = normalizeSocialLinks(payload.socialLinks);
+  const socialErrors = validateSocialLinks(socialLinks);
+  if (Object.keys(socialErrors).length > 0) {
+    const firstError = Object.values(socialErrors)[0];
+    throw new MandalaAdminError('invalid-social-links', firstError);
+  }
+
   const oppRef = doc(db, SATSANG_COLLECTION, opportunityId);
   const auditRef = doc(collection(db, AUDIT_LOGS_COLLECTION));
 
@@ -146,8 +166,6 @@ export async function updateSatsangOpportunity(viewer, opportunityId, payload) {
     if (!oppSnap.exists()) {
       throw new MandalaAdminError('not-found', 'Opportunity not found.');
     }
-
-    const existing = oppSnap.data();
 
     transaction.update(oppRef, {
       title: cleanTitle,
@@ -159,6 +177,7 @@ export async function updateSatsangOpportunity(viewer, opportunityId, payload) {
       meetingLink: (payload.meetingLink || '').trim(),
       startAt: toTimestamp(payload.startAt),
       endAt: toTimestamp(payload.endAt),
+      socialLinks,
       status,
       updatedAt: serverTimestamp(),
       updatedBy: viewer.uid,

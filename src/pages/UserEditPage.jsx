@@ -113,7 +113,7 @@ export default function UserEditPage({ uid, onBack, viewer }) {
 
         <form className="admin-profile-form-grid admin-admin-form-grid" onSubmit={(e) => e.preventDefault()}>
           <label className="admin-profile-field">
-            <span>Full Name</span>
+            <span>Full Name <span className="admin-required-indicator">*</span></span>
             <div className="admin-inline-input-action">
               <input
                 name="name"
@@ -134,7 +134,7 @@ export default function UserEditPage({ uid, onBack, viewer }) {
           </label>
 
           <label className="admin-profile-field">
-            <span>Phone Number</span>
+            <span>Phone Number <span className="admin-required-indicator">*</span></span>
             <div className="admin-inline-input-action">
               <input
                 inputMode="numeric"

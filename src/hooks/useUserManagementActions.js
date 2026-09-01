@@ -7,13 +7,6 @@ import {
   updateUserPhone,
 } from '../services/userManagementService';
 
-/**
- * Hook for user management mutation actions.
- * Uses AppNoticeCenter for success/error feedback (same as the rest of the admin shell).
- *
- * Returns action functions and loading state.
- * onSuccess callback is invoked with the action type so callers can refresh data.
- */
 export function useUserManagementActions(viewer, { onSuccess } = {}) {
   const { showNotice } = useAppNotice();
   const [actionState, setActionState] = useState({});

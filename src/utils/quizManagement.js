@@ -244,3 +244,50 @@ export function validateQuizPayload(payload, { mode = 'publish' } = {}) {
 
   return errors;
 }
+
+export function validateSingleQuestion(question, index = 0) {
+  const errors = {};
+  const questionNumber = index + 1;
+  const text = String(question?.text || '').trim();
+  const options = question?.options || [];
+  const correctIndex = Number(question?.correctIndex);
+  const time = Number(question?.time);
+
+  if (!text) {
+    errors[`question-${index}-text`] = `Question ${questionNumber} text is required.`;
+  }
+
+  if (!Array.isArray(options) || options.length !== QUESTION_OPTION_COUNT || options.some((option) => !String(option || '').trim())) {
+    errors[`question-${index}-options`] = `Question ${questionNumber} must have exactly 4 options.`;
+  }
+
+  if (!Number.isInteger(correctIndex) || correctIndex < 0 || correctIndex >= QUESTION_OPTION_COUNT) {
+    errors[`question-${index}-correctIndex`] = `Question ${questionNumber} needs one correct answer.`;
+  }
+
+  if (!time || time <= 0) {
+    errors[`question-${index}-time`] = `Question ${questionNumber} timer must be greater than 0.`;
+  }
+
+  return errors;
+}
+
+export function isQuestionComplete(question) {
+  if (!question) return false;
+  const text = String(question.text || '').trim();
+  const options = question.options || [];
+  const correctIndex = Number(question.correctIndex);
+  const time = Number(question.time);
+
+  return (
+    Boolean(text) &&
+    Array.isArray(options) &&
+    options.length === QUESTION_OPTION_COUNT &&
+    options.every((opt) => Boolean(String(opt || '').trim())) &&
+    Number.isInteger(correctIndex) &&
+    correctIndex >= 0 &&
+    correctIndex < QUESTION_OPTION_COUNT &&
+    Boolean(time && time > 0)
+  );
+}
+

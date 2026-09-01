@@ -338,7 +338,7 @@ export default function QuizAnalytics({ quiz, onBack }) {
         <div className="admin-page-hero-actions">
           <button className="secondary-cta is-compact" onClick={onBack}>
             <AdminIcon name="arrowLeft" size={16} />
-            <span>Back to Quizzes</span>
+            <span>Back to Quiz Management</span>
           </button>
         </div>
         <div className="admin-page-hero-copy">

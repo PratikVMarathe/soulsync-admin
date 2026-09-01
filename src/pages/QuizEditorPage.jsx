@@ -1,6 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import AppStatusView from '../components/AppStatusView';
 import AdminIcon from '../components/AdminIcon';
+import ImagePreviewDialog from '../components/ImagePreviewDialog';
+import ImageUploadDialog from '../components/ImageUploadDialog';
+import QuestionManagementDialog from '../components/QuestionManagementDialog';
 import {
   DEFAULT_REFERENCE,
   MAX_DRAFTS_PER_ADMIN,
@@ -8,6 +11,7 @@ import {
   QUIZ_LEVEL_OPTIONS,
   QUIZ_STATUSES,
 } from '../constants/quizManagement';
+import { UPLOAD_FOLDERS } from '../constants/upload';
 import {
   getDraftLimitState,
   loadQuizForEditing,
@@ -52,12 +56,15 @@ export default function QuizEditorPage({
   const [fieldErrors, setFieldErrors] = useState({});
   const [feedback, setFeedback] = useState({ error: '', success: '' });
   const [submittingAction, setSubmittingAction] = useState('');
+  const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false);
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [draftLimit, setDraftLimit] = useState({
     draftCount: 0,
     limit: MAX_DRAFTS_PER_ADMIN,
     reached: false,
   });
   const [slugTouched, setSlugTouched] = useState(isEditing);
+  const [isQuestionDialogOpen, setIsQuestionDialogOpen] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -157,6 +164,24 @@ export default function QuizEditorPage({
       }),
     }));
     setFeedback({ error: '', success: '' });
+  };
+
+  const handleOpenAddQuestion = () => {
+    if (formState.questions.length === 0) {
+      const remainingTime = getRemainingQuestionTime(formState.questions, formState.estimatedTime);
+      if (remainingTime <= 0) {
+        setFeedback({
+          error: 'No timer budget remains. Increase estimated time or reduce existing question timers first.',
+          success: '',
+        });
+        return;
+      }
+      setFormState((currentState) => ({
+        ...currentState,
+        questions: [createEmptyQuestion(0, remainingTime)],
+      }));
+    }
+    setIsQuestionDialogOpen(true);
   };
 
   const addQuestion = () => {
@@ -309,7 +334,7 @@ export default function QuizEditorPage({
   if (error) {
     return (
       <AppStatusView
-        actions={[{ label: 'Back to Quizzes', onClick: onBack }]}
+        actions={[{ label: 'Back to Quiz Management', onClick: onBack }]}
         state={error}
       />
     );
@@ -322,11 +347,15 @@ export default function QuizEditorPage({
   return (
     <div className="admin-profile-page admin-quiz-editor-page">
       <section className="admin-profile-hero admin-admin-hero">
-        <div className="admin-page-hero-actions">
-          <button className="secondary-cta is-compact" onClick={onBack} type="button">
-            Back to Quizzes
-          </button>
-        </div>
+        <button
+          aria-label="Back to Quiz Management"
+          className="ghost-cta is-compact admin-back-link"
+          onClick={onBack}
+          type="button"
+        >
+          <AdminIcon name="arrowLeft" size={16} />
+          <span>Back to Quiz Management</span>
+        </button>
         <div className="admin-profile-identity-copy">
           <span className="admin-profile-eyebrow">Quiz Management</span>
           <h1>{isEditing ? 'Edit Quiz' : 'Create Quiz'}</h1>
@@ -359,7 +388,7 @@ export default function QuizEditorPage({
 
         <div className="admin-profile-form-grid admin-quiz-form-grid">
           <label className="admin-profile-field">
-            <span>Title</span>
+            <span>Title <span className="admin-required-indicator">*</span></span>
             <input
               onChange={(event) => updateFormField('title', event.target.value)}
               placeholder="Concept 1: Focus"
@@ -370,7 +399,7 @@ export default function QuizEditorPage({
           </label>
 
           <label className="admin-profile-field">
-            <span>Slug</span>
+            <span>Slug <span className="admin-required-indicator">*</span></span>
             <input
               onChange={(event) => handleSlugChange(event.target.value)}
               placeholder="focus"
@@ -437,15 +466,37 @@ export default function QuizEditorPage({
             />
           </label>
 
-          <label className="admin-profile-field">
+          <div className="admin-profile-field admin-image-field-group">
             <span>Image URL</span>
-            <input
-              onChange={(event) => updateFormField('imageUrl', event.target.value)}
-              placeholder="https://..."
-              type="url"
-              value={formState.imageUrl}
-            />
-          </label>
+            <div className="admin-image-input-row">
+              <input
+                onChange={(event) => updateFormField('imageUrl', event.target.value)}
+                placeholder="https://..."
+                type="url"
+                value={formState.imageUrl}
+              />
+              <div className="admin-image-actions-row">
+                <button
+                  className="secondary-cta is-compact"
+                  onClick={() => setIsUploadDialogOpen(true)}
+                  type="button"
+                >
+                  <AdminIcon name="uploadCloud" size={16} />
+                  <span>Upload Image</span>
+                </button>
+                <button
+                  className="secondary-cta is-compact"
+                  disabled={!formState.imageUrl}
+                  onClick={() => setIsPreviewOpen(true)}
+                  type="button"
+                >
+                  <AdminIcon name="eye" size={16} />
+                  <span>Preview</span>
+                </button>
+              </div>
+            </div>
+            <FieldError message={fieldErrors.imageUrl} />
+          </div>
 
           <label className="admin-profile-field">
             <span>Image Alt</span>
@@ -494,172 +545,86 @@ export default function QuizEditorPage({
         </div>
       </section>
 
-      <section className="admin-panel admin-quiz-editor-shell">
-        <header className="admin-panel-header">
-          <div>
-            <h2>Questions</h2>
-            <p>Add at least one complete question before publishing. Each question must have four options.</p>
-          </div>
+      <section className="admin-panel admin-quiz-editor-shell admin-quiz-questions-overview-shell">
+        <div className="admin-quiz-questions-overview">
+          {formState.questions.length === 0 ? (
+            <>
+              <div className="admin-quiz-questions-overview-copy">
+                <h2>Questions</h2>
+                <p>Add at least one complete question before publishing. Each question must have four options.</p>
+              </div>
 
-          <button className="primary-cta is-compact" onClick={addQuestion} type="button">
-            <AdminIcon name="bookPlus" size={18} />
-            <span>Add Question</span>
-          </button>
-        </header>
+              <button
+                className="primary-cta is-compact"
+                onClick={handleOpenAddQuestion}
+                type="button"
+              >
+                <AdminIcon name="bookPlus" size={18} />
+                <span>Add Question</span>
+              </button>
+            </>
+          ) : (
+            <>
+              <div className="admin-quiz-questions-overview-copy">
+                <div className="admin-quiz-questions-count-group">
+                  <h2>Questions</h2>
+                  <span className="admin-badge admin-badge-highlight">
+                    {formState.questions.length} Question{formState.questions.length === 1 ? '' : 's'}
+                  </span>
+                </div>
+                <p>Review, edit, and navigate questions in the Question Management Workspace.</p>
+              </div>
+
+              <button
+                className="secondary-cta is-compact"
+                onClick={() => setIsQuestionDialogOpen(true)}
+                type="button"
+              >
+                <AdminIcon name="book" size={18} />
+                <span>View Questions</span>
+              </button>
+            </>
+          )}
+        </div>
 
         <FieldError message={fieldErrors.questions} />
-
-        <div className="admin-quiz-question-list">
-          {formState.questions.map((question, questionIndex) => {
-            const maxTime = getQuestionTimeLimit({
-              estimatedTime: formState.estimatedTime,
-              questionIndex,
-              questions: formState.questions,
-            });
-
-            return (
-              <article className="admin-quiz-question-card" key={question.id}>
-                <header className="admin-quiz-question-header">
-                  <div>
-                    <span className="admin-badge">Question {questionIndex + 1}</span>
-                    <p>Max timer for this question: {maxTime} seconds</p>
-                  </div>
-
-                  <button
-                    className="ghost-cta is-compact"
-                    onClick={() => removeQuestion(questionIndex)}
-                    type="button"
-                  >
-                    Remove
-                  </button>
-                </header>
-
-                <label className="admin-profile-field admin-quiz-field-wide">
-                  <span>Question Text</span>
-                  <textarea
-                    onChange={(event) => updateQuestion(questionIndex, { text: event.target.value })}
-                    placeholder="How can one maintain focus during stressful situations?"
-                    rows={3}
-                    value={question.text}
-                  />
-                  <FieldError message={getQuestionError(fieldErrors, questionIndex, 'text')} />
-                </label>
-
-                <div className="admin-quiz-options-grid">
-                  {Array.from({ length: QUESTION_OPTION_COUNT }).map((_, optionIndex) => (
-                    <label className="admin-profile-field" key={`${question.id}-option-${optionIndex}`}>
-                      <span>Option {optionIndex + 1}</span>
-                      <input
-                        onChange={(event) => updateQuestionOption(questionIndex, optionIndex, event.target.value)}
-                        placeholder={`Option ${optionIndex + 1}`}
-                        type="text"
-                        value={question.options[optionIndex] || ''}
-                      />
-                    </label>
-                  ))}
-                </div>
-                <FieldError message={getQuestionError(fieldErrors, questionIndex, 'options')} />
-
-                <div className="admin-quiz-question-controls">
-                  <label className="admin-profile-field">
-                    <span>Correct Answer</span>
-                    <select
-                      onChange={(event) => updateQuestion(questionIndex, { correctIndex: Number(event.target.value) })}
-                      value={question.correctIndex}
-                    >
-                      {Array.from({ length: QUESTION_OPTION_COUNT }).map((_, optionIndex) => (
-                        <option key={`${question.id}-answer-${optionIndex}`} value={optionIndex}>
-                          Option {optionIndex + 1}
-                        </option>
-                      ))}
-                    </select>
-                    <FieldError message={getQuestionError(fieldErrors, questionIndex, 'correctIndex')} />
-                  </label>
-
-                  <label className="admin-profile-field">
-                    <span>Timer (seconds)</span>
-                    <input
-                      max={maxTime}
-                      min={1}
-                      onChange={(event) => handleQuestionTimeChange(questionIndex, event.target.value)}
-                      type="number"
-                      value={question.time}
-                    />
-                    <FieldError message={getQuestionError(fieldErrors, questionIndex, 'time')} />
-                  </label>
-                </div>
-
-                <div className="admin-quiz-reference-list">
-                  <div className="admin-quiz-reference-heading">
-                    <strong>Scripture References</strong>
-                    <button
-                      className="secondary-cta is-compact"
-                      onClick={() => addReference(questionIndex)}
-                      type="button"
-                    >
-                      Add Reference
-                    </button>
-                  </div>
-
-                  {question.references.map((reference, referenceIndex) => (
-                    <div className="admin-quiz-reference-grid" key={`${question.id}-reference-${referenceIndex}`}>
-                      <label className="admin-profile-field">
-                        <span>Source</span>
-                        <input
-                          onChange={(event) => updateReference(questionIndex, referenceIndex, 'source', event.target.value)}
-                          placeholder="Bhagavad Gita"
-                          type="text"
-                          value={reference.source}
-                        />
-                      </label>
-
-                      <label className="admin-profile-field">
-                        <span>Chapter</span>
-                        <input
-                          min={1}
-                          onChange={(event) => updateReference(questionIndex, referenceIndex, 'chapter', event.target.value)}
-                          type="number"
-                          value={reference.chapter}
-                        />
-                      </label>
-
-                      <label className="admin-profile-field">
-                        <span>Verse</span>
-                        <input
-                          min={1}
-                          onChange={(event) => updateReference(questionIndex, referenceIndex, 'verse', event.target.value)}
-                          type="number"
-                          value={reference.verse}
-                        />
-                      </label>
-
-                      <label className="admin-profile-field">
-                        <span>Reference Text</span>
-                        <input
-                          onChange={(event) => updateReference(questionIndex, referenceIndex, 'text', event.target.value)}
-                          placeholder="The restless mind can be controlled by practice and detachment."
-                          type="text"
-                          value={reference.text}
-                        />
-                      </label>
-
-                      {question.references.length > 1 ? (
-                        <button
-                          className="ghost-cta is-compact admin-quiz-reference-remove"
-                          onClick={() => removeReference(questionIndex, referenceIndex)}
-                          type="button"
-                        >
-                          Remove
-                        </button>
-                      ) : null}
-                    </div>
-                  ))}
-                </div>
-              </article>
-            );
-          })}
-        </div>
       </section>
+
+      {/* Question Management Workspace Dialog */}
+      <QuestionManagementDialog
+        fieldErrors={fieldErrors}
+        formState={formState}
+        isOpen={isQuestionDialogOpen}
+        onAddQuestion={addQuestion}
+        onAddReference={addReference}
+        onClose={() => setIsQuestionDialogOpen(false)}
+        onRemoveQuestion={removeQuestion}
+        onRemoveReference={removeReference}
+        onSave={handleSubmit}
+        onUpdateOption={updateQuestionOption}
+        onUpdateQuestion={updateQuestion}
+        onUpdateReference={updateReference}
+        setFieldErrors={setFieldErrors}
+        setFormState={setFormState}
+      />
+
+      {/* Image Preview Modal */}
+      <ImagePreviewDialog
+        isOpen={isPreviewOpen}
+        onClose={() => setIsPreviewOpen(false)}
+        title="Quiz Image Preview"
+        url={formState.imageUrl}
+      />
+
+      {/* Image Upload Modal */}
+      <ImageUploadDialog
+        folder={UPLOAD_FOLDERS.QUIZ}
+        isOpen={isUploadDialogOpen}
+        onClose={() => setIsUploadDialogOpen(false)}
+        onSuccess={(url) => updateFormField('imageUrl', url)}
+        title="Upload Quiz Image"
+        viewer={viewer}
+      />
 
       <section className="admin-quiz-editor-actions">
         {canSaveDraft ? (
