@@ -34,7 +34,7 @@ jobs:
           echo "VITE_FIREBASE_MESSAGING_SENDER_ID=${{ secrets.VITE_FIREBASE_MESSAGING_SENDER_ID_DEV }}" >> $GITHUB_ENV
           echo "VITE_FIREBASE_APP_ID=${{ secrets.VITE_FIREBASE_APP_ID_DEV }}" >> $GITHUB_ENV
           echo "VITE_FIREBASE_MEASUREMENT_ID=${{ secrets.VITE_FIREBASE_MEASUREMENT_ID_DEV }}" >> $GITHUB_ENV
-          echo "VITE_IMAGE_API_URL=${{ secrets.VITE_IMAGE_API_URL_DEV || vars.VITE_IMAGE_API_URL_DEV || 'https://soulsync-api-dev.onrender.com' }}" >> $GITHUB_ENV
+          echo "VITE_IMAGE_API_URL=${{ secrets.VITE_IMAGE_API_URL_DEV || vars.VITE_IMAGE_API_URL_DEV || 'https://soulsync-api-mlw9.onrender.com' }}" >> $GITHUB_ENV
           echo "VITE_MAX_IMAGE_SIZE_KB=500" >> $GITHUB_ENV
 
       - name: Configure PROD environment
