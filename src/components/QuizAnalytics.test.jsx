@@ -4,27 +4,28 @@ import QuizAnalytics from './QuizAnalytics';
 
 // Mock the admin analytics service
 vi.mock('../services/adminAnalyticsService', () => ({
-  loadQuizAnalytics: vi.fn().mockResolvedValue({
-    users: [
-      {
-        userId: 'user1',
-        userName: 'John Doe',
-        status: 'COMPLETED',
-        latestScore: 8,
-        bestScore: 9,
-        attempts: [{ id: 'a1' }],
-        lastAttemptDate: 123456789
-      }
-    ],
-    stats: {
-      totalAttempts: 10,
-      uniqueUsers: 5,
-      avgScore: 80,
-      completionRate: 90,
-      avgTime: '02:00',
-      passRate: 75
+  loadQuizAnalytics: vi.fn().mockResolvedValue([
+    {
+      id: 'a1',
+      userId: 'user1',
+      userName: 'John Doe',
+      status: 'COMPLETED',
+      percentage: 80,
+      totalTimeTaken: 120,
+      startedAt: { toMillis: () => 123456789 },
+      completedAt: { toMillis: () => 123456909 }
+    },
+    {
+      id: 'a2',
+      userId: 'user2',
+      userName: 'Jane Smith',
+      status: 'COMPLETED',
+      percentage: 80,
+      totalTimeTaken: 100,
+      startedAt: { toMillis: () => 123456800 },
+      completedAt: { toMillis: () => 123456900 }
     }
-  })
+  ])
 }));
 
 describe('QuizAnalytics Component', () => {
@@ -41,11 +42,11 @@ describe('QuizAnalytics Component', () => {
     });
 
     // Check stats
-    expect(screen.getByText('10')).toBeInTheDocument(); // total attempts
-    expect(screen.getByText('5')).toBeInTheDocument(); // unique users
+    expect(screen.getAllByText('2').length).toBeGreaterThan(0); // total attempts / unique users
     expect(screen.getByText('80%')).toBeInTheDocument(); // avg score
     
     // Check users list
     expect(screen.getByText('John Doe')).toBeInTheDocument();
+    expect(screen.getByText('Jane Smith')).toBeInTheDocument();
   });
 });

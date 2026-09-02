@@ -251,6 +251,7 @@ function QuizCard({
 }
 
 export default function QuizManagementPage({
+  onBulkUploadQuiz,
   onCreateQuiz,
   onEditQuiz,
   viewer,
@@ -387,6 +388,11 @@ export default function QuizManagementPage({
         </div>
 
         <div className="admin-page-hero-actions">
+          <button className="secondary-cta is-compact" onClick={onBulkUploadQuiz} type="button">
+            <AdminIcon name="uploadCloud" size={18} />
+            <span>Bulk Upload</span>
+          </button>
+
           <button className="primary-cta is-compact" onClick={onCreateQuiz} type="button">
             <AdminIcon name="bookPlus" size={18} />
             <span>Create Quiz</span>

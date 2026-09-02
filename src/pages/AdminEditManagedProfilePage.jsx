@@ -337,7 +337,7 @@ export default function AdminEditManagedProfilePage({ adminId, onBack, viewer })
           <div className="admin-form-empty-slot" aria-hidden="true" />
 
           <label className="admin-profile-field">
-            <span>Email Address</span>
+            <span>Email Address <span className="admin-required-indicator">*</span></span>
             <div className="admin-inline-input-action">
               <input
                 name="email"

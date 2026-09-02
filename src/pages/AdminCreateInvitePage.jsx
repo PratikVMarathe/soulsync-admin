@@ -202,7 +202,7 @@ export default function AdminCreateInvitePage({ onBack, viewer }) {
           <div className="admin-form-empty-slot" aria-hidden="true" />
 
           <label className="admin-profile-field">
-            <span>Email Address</span>
+            <span>Email Address <span className="admin-required-indicator">*</span></span>
             <div className="admin-inline-input-action">
               <input
                 autoComplete="email"
@@ -225,7 +225,7 @@ export default function AdminCreateInvitePage({ onBack, viewer }) {
           </label>
 
           <label className="admin-profile-field">
-            <span>Phone Number</span>
+            <span>Phone Number <span className="admin-required-indicator">*</span></span>
             <div className="admin-inline-input-action">
               <input
                 autoComplete="tel"
