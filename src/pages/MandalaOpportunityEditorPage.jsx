@@ -18,6 +18,26 @@ import {
   updateSatsangOpportunity,
 } from '../services/mandalaAdminService';
 
+const ALL_CLASS_MODES = [
+  { value: 'ONLINE', label: 'Online' },
+  { value: 'OFFLINE', label: 'Offline' },
+];
+
+const ALL_CLASS_LANGUAGES = [
+  { value: 'ENGLISH', label: 'English' },
+  { value: 'HINDI', label: 'Hindi' },
+];
+
+const ALL_CLASS_DAYS = [
+  { value: 'SATURDAY', label: 'Saturday' },
+  { value: 'SUNDAY', label: 'Sunday' },
+  { value: 'MONDAY', label: 'Monday' },
+  { value: 'TUESDAY', label: 'Tuesday' },
+  { value: 'WEDNESDAY', label: 'Wednesday' },
+  { value: 'THURSDAY', label: 'Thursday' },
+  { value: 'FRIDAY', label: 'Friday' },
+];
+
 function FieldError({ message }) {
   if (!message) return null;
   return <small className="admin-form-feedback is-error">{message}</small>;
@@ -57,6 +77,11 @@ export default function MandalaOpportunityEditorPage({
     meetingLink: '',
     startAt: '',
     endAt: '',
+    classDetails: {
+      availableModes: ['ONLINE', 'OFFLINE'],
+      availableLanguages: ['ENGLISH', 'HINDI'],
+      availableDays: ['SATURDAY', 'SUNDAY'],
+    },
   });
 
   const [socialLinkEntries, setSocialLinkEntries] = useState([
@@ -100,6 +125,11 @@ export default function MandalaOpportunityEditorPage({
           meetingLink: opp.meetingLink || '',
           startAt: formatTimestampForInput(opp.startAt),
           endAt: formatTimestampForInput(opp.endAt),
+          classDetails: {
+            availableModes: opp.classDetails?.availableModes?.length ? opp.classDetails.availableModes : ['ONLINE', 'OFFLINE'],
+            availableLanguages: opp.classDetails?.availableLanguages?.length ? opp.classDetails.availableLanguages : ['ENGLISH', 'HINDI'],
+            availableDays: opp.classDetails?.availableDays?.length ? opp.classDetails.availableDays : ['SATURDAY', 'SUNDAY'],
+          },
         });
 
         const normalizedSocial = normalizeSocialLinks(opp.socialLinks);
@@ -140,6 +170,28 @@ export default function MandalaOpportunityEditorPage({
     }));
     setFieldErrors((prev) => ({ ...prev, [name]: '' }));
     setFeedback({ error: '', success: '' });
+  };
+
+  const handleToggleClassDetail = (field, value) => {
+    setFormState((prev) => {
+      const currentList = prev.classDetails?.[field] || [];
+      const exists = currentList.includes(value);
+      const updatedList = exists
+        ? currentList.filter((item) => item !== value)
+        : [...currentList, value];
+
+      if (updatedList.length === 0) {
+        return prev;
+      }
+
+      return {
+        ...prev,
+        classDetails: {
+          ...prev.classDetails,
+          [field]: updatedList,
+        },
+      };
+    });
   };
 
   const handleAddSocialLink = () => {
@@ -349,6 +401,88 @@ export default function MandalaOpportunityEditorPage({
               value={formState.description}
             />
           </label>
+
+          {/* Class-Specific Basic Information Configuration */}
+          {formState.category === SATSANG_CATEGORIES.CLASS ? (
+            <div
+              className="admin-profile-field admin-quiz-field-wide"
+              style={{
+                background: '#f8fafc',
+                border: '1px solid #e2e8f0',
+                borderRadius: '0.75rem',
+                marginTop: '0.5rem',
+                padding: '1.25rem',
+              }}
+            >
+              <div style={{ marginBottom: '1rem' }}>
+                <strong style={{ color: 'var(--soul-green-deep, #142e29)', fontSize: '1rem' }}>
+                  Class Configuration
+                </strong>
+                <p style={{ color: '#64748b', fontSize: '0.85rem', margin: '0.25rem 0 0 0' }}>
+                  Configure the modes, languages, and days offered for this class.
+                </p>
+              </div>
+
+              <div style={{ display: 'grid', gap: '1.25rem', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))' }}>
+                {/* Available Modes */}
+                <div>
+                  <span style={{ display: 'block', fontSize: '0.875rem', fontWeight: 600, marginBottom: '0.5rem' }}>
+                    Available Modes <span className="admin-required-indicator">*</span>
+                  </span>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                    {ALL_CLASS_MODES.map((m) => (
+                      <label key={m.value} style={{ alignItems: 'center', cursor: 'pointer', display: 'flex', gap: '0.5rem', fontSize: '0.9rem' }}>
+                        <input
+                          checked={formState.classDetails?.availableModes?.includes(m.value) ?? false}
+                          onChange={() => handleToggleClassDetail('availableModes', m.value)}
+                          type="checkbox"
+                        />
+                        <span>{m.label}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Available Languages */}
+                <div>
+                  <span style={{ display: 'block', fontSize: '0.875rem', fontWeight: 600, marginBottom: '0.5rem' }}>
+                    Available Languages <span className="admin-required-indicator">*</span>
+                  </span>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                    {ALL_CLASS_LANGUAGES.map((l) => (
+                      <label key={l.value} style={{ alignItems: 'center', cursor: 'pointer', display: 'flex', gap: '0.5rem', fontSize: '0.9rem' }}>
+                        <input
+                          checked={formState.classDetails?.availableLanguages?.includes(l.value) ?? false}
+                          onChange={() => handleToggleClassDetail('availableLanguages', l.value)}
+                          type="checkbox"
+                        />
+                        <span>{l.label}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Available Days */}
+                <div style={{ gridColumn: '1 / -1' }}>
+                  <span style={{ display: 'block', fontSize: '0.875rem', fontWeight: 600, marginBottom: '0.5rem' }}>
+                    Available Days <span className="admin-required-indicator">*</span>
+                  </span>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.85rem' }}>
+                    {ALL_CLASS_DAYS.map((d) => (
+                      <label key={d.value} style={{ alignItems: 'center', cursor: 'pointer', display: 'flex', gap: '0.5rem', fontSize: '0.9rem' }}>
+                        <input
+                          checked={formState.classDetails?.availableDays?.includes(d.value) ?? false}
+                          onChange={() => handleToggleClassDetail('availableDays', d.value)}
+                          type="checkbox"
+                        />
+                        <span>{d.label}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : null}
         </div>
       </section>
 

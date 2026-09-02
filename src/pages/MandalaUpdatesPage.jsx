@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import AdminIcon from '../components/AdminIcon';
+import InterestRequestDetailsDialog from '../components/InterestRequestDetailsDialog';
 import {
   deleteInterestRequest,
   deleteSatsangOpportunity,
@@ -99,6 +100,7 @@ export default function MandalaUpdatesPage({
   const [interestSearch, setInterestSearch] = useState('');
   const [interestStatusFilter, setInterestStatusFilter] = useState('ALL');
   const [interestPage, setInterestPage] = useState(1);
+  const [viewingRequest, setViewingRequest] = useState(null);
 
   const [actionState, setActionState] = useState({});
   const [feedback, setFeedback] = useState({ error: '', success: '' });
@@ -216,6 +218,9 @@ export default function MandalaUpdatesPage({
     try {
       await updateInterestRequestStatus(viewer, req.id, newStatus, req);
       setFeedback({ error: '', success: `Updated status for ${req.name} to ${newStatus}.` });
+      if (viewingRequest?.id === req.id) {
+        setViewingRequest((prev) => (prev ? { ...prev, status: newStatus } : null));
+      }
       await loadAllData();
     } catch (err) {
       console.error('Update request status error:', err);
@@ -558,10 +563,20 @@ export default function MandalaUpdatesPage({
                           <tr key={req.id}>
                             <td data-label="User">
                               <div className="admin-table-item" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: '0.15rem' }}>
-                                <span>{req.name}</span>
-                                {req.description ? (
+                                <span><strong>{req.name}</strong>{req.age ? ` (${req.age} yrs)` : ''}</span>
+                                {req.passion ? (
+                                  <small style={{ color: 'var(--soul-green-deep, #142e29)', fontWeight: 600 }}>
+                                    {req.passion}: {req.institutionName || '—'}
+                                  </small>
+                                ) : null}
+                                {(req.mode || req.language || req.preferredDay) ? (
                                   <small style={{ color: 'var(--admin-text-soft)' }}>
-                                    {req.description}
+                                    {[req.mode, req.language, req.preferredDay ? `Day: ${req.preferredDay}` : null].filter(Boolean).join(' • ')}
+                                  </small>
+                                ) : null}
+                                {req.description ? (
+                                  <small style={{ color: 'var(--admin-text-soft)', fontStyle: 'italic' }}>
+                                    &quot;{req.description}&quot;
                                   </small>
                                 ) : null}
                               </div>
@@ -607,6 +622,13 @@ export default function MandalaUpdatesPage({
                               <div className="admin-row-actions">
                                 <button
                                   className="ghost-cta is-compact"
+                                  onClick={() => setViewingRequest(req)}
+                                  type="button"
+                                >
+                                  View
+                                </button>
+                                <button
+                                  className="ghost-cta is-compact"
                                   disabled={Boolean(actionState[req.id])}
                                   onClick={() => handleDeleteInterestRequest(req)}
                                   type="button"
@@ -634,6 +656,16 @@ export default function MandalaUpdatesPage({
           ) : null}
         </div>
       </section>
+
+      {/* User Interest Details Modal */}
+      <InterestRequestDetailsDialog
+        isLoadingStatus={actionState[viewingRequest?.id] === 'status'}
+        isOpen={Boolean(viewingRequest)}
+        onClose={() => setViewingRequest(null)}
+        onEditOpportunity={onEditOpportunity}
+        onStatusChange={handleUpdateInterestStatus}
+        request={viewingRequest}
+      />
     </div>
   );
 }
