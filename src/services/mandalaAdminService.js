@@ -21,6 +21,12 @@ export const SATSANG_CATEGORIES = {
   FESTIVAL: 'FESTIVAL',
 };
 
+export const CATEGORY_LABELS = {
+  CLASS: 'Class',
+  EVENT: 'Event',
+  FESTIVAL: 'Festival',
+};
+
 export const SATSANG_STATUSES = {
   ACTIVE: 'ACTIVE',
   INACTIVE: 'INACTIVE',
@@ -81,6 +87,33 @@ export async function fetchSatsangOpportunities(viewer) {
   });
 }
 
+export const DEFAULT_CLASS_DETAILS = {
+  availableModes: ['ONLINE', 'OFFLINE'],
+  availableLanguages: ['ENGLISH', 'HINDI'],
+  availableDays: ['SATURDAY', 'SUNDAY'],
+};
+
+export function normalizeClassDetails(details) {
+  if (!details || typeof details !== 'object') {
+    return { ...DEFAULT_CLASS_DETAILS };
+  }
+  const availableModes = Array.isArray(details.availableModes) && details.availableModes.length > 0
+    ? details.availableModes
+    : ['ONLINE', 'OFFLINE'];
+  const availableLanguages = Array.isArray(details.availableLanguages) && details.availableLanguages.length > 0
+    ? details.availableLanguages
+    : ['ENGLISH', 'HINDI'];
+  const availableDays = Array.isArray(details.availableDays) && details.availableDays.length > 0
+    ? details.availableDays
+    : ['SATURDAY', 'SUNDAY'];
+
+  return {
+    availableModes,
+    availableLanguages,
+    availableDays,
+  };
+}
+
 export async function createSatsangOpportunity(viewer, payload) {
   requireAdmin(viewer);
 
@@ -113,6 +146,9 @@ export async function createSatsangOpportunity(viewer, payload) {
     startAt: toTimestamp(payload.startAt),
     endAt: toTimestamp(payload.endAt),
     socialLinks,
+    ...(category === SATSANG_CATEGORIES.CLASS
+      ? { classDetails: normalizeClassDetails(payload.classDetails) }
+      : {}),
     status,
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
@@ -167,7 +203,7 @@ export async function updateSatsangOpportunity(viewer, opportunityId, payload) {
       throw new MandalaAdminError('not-found', 'Opportunity not found.');
     }
 
-    transaction.update(oppRef, {
+    const updateData = {
       title: cleanTitle,
       category,
       description: (payload.description || '').trim(),
@@ -181,7 +217,13 @@ export async function updateSatsangOpportunity(viewer, opportunityId, payload) {
       status,
       updatedAt: serverTimestamp(),
       updatedBy: viewer.uid,
-    });
+    };
+
+    if (category === SATSANG_CATEGORIES.CLASS) {
+      updateData.classDetails = normalizeClassDetails(payload.classDetails);
+    }
+
+    transaction.update(oppRef, updateData);
 
     transaction.set(auditRef, {
       action: 'SATSANG_CENTRAL_UPDATED',
