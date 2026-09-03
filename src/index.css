@@ -5222,3 +5222,28 @@ a {
   justify-content: center;
   flex-shrink: 0;
 }
+
+.admin-sequence-item:hover {
+  border-color: rgba(30, 77, 59, 0.25) !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.admin-sequence-item.is-dragging {
+  opacity: 0.5;
+  border-style: dashed !important;
+}
+
+.admin-status-chip.is-active {
+  background: #e6f4ea;
+  color: #137333;
+}
+
+.admin-status-chip.is-draft {
+  background: #fef7e0;
+  color: #b06000;
+}
+
+.admin-status-chip.is-inactive {
+  background: #fce8e6;
+  color: #c5221f;
+}
