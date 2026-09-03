@@ -542,3 +542,38 @@ export async function softDeleteQuiz({ quizId, viewer }) {
     }));
   });
 }
+
+export async function updateQuizSequenceBatch(quizSequenceList, viewer) {
+  requireQuizAdmin(viewer);
+
+  if (!Array.isArray(quizSequenceList) || !quizSequenceList.length) {
+    return;
+  }
+
+  const batch = writeBatch(db);
+  const now = serverTimestamp();
+
+  quizSequenceList.forEach(({ id, sequence }) => {
+    if (id && Number.isFinite(Number(sequence))) {
+      const ref = doc(db, QUIZZES_COLLECTION, id);
+      batch.update(ref, {
+        sequence: Number(sequence),
+        updatedAt: now,
+        updatedBy: viewer.uid,
+      });
+    }
+  });
+
+  const auditRef = doc(collection(db, AUDIT_LOGS_COLLECTION));
+  batch.set(auditRef, {
+    action: 'QUIZ_SEQUENCE_UPDATE',
+    createdAt: now,
+    performedBy: viewer.uid,
+    performedByRole: viewer.role,
+    status: 'SUCCESS',
+    targetId: 'quizzes',
+    targetTitle: `Updated sequence for ${quizSequenceList.length} quizzes`,
+  });
+
+  await batch.commit();
+}

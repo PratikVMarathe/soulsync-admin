@@ -117,6 +117,7 @@ export function quizToFormState(quiz = {}) {
     level: normalizeQuizLevel(quiz.level),
     publishAt: timestampToInputValue(quiz.publishAt),
     questions,
+    sequence: typeof quiz.sequence === 'number' ? quiz.sequence : null,
     slug: quiz.slug || slugifyQuizTitle(quiz.title),
     status: normalizeQuizStatus(quiz.status),
     title: quiz.title || '',
@@ -166,7 +167,7 @@ export function buildQuizPayloadFromForm(formState, status) {
     time: Math.max(1, Number(question.time) || 1),
   }));
 
-  return {
+  const payload = {
     allowRetake: formState.allowRetake !== false,
     category: String(formState.category || '').trim().toLowerCase(),
     description: String(formState.description || '').trim(),
@@ -183,6 +184,12 @@ export function buildQuizPayloadFromForm(formState, status) {
     totalQuestions: normalizedQuestions.length,
     visualKey: String(formState.visualKey || '').trim(),
   };
+
+  if (typeof formState.sequence === 'number' && formState.sequence >= 0) {
+    payload.sequence = formState.sequence;
+  }
+
+  return payload;
 }
 
 export function validateQuizPayload(payload, { mode = 'publish' } = {}) {

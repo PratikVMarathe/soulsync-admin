@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import AppStatusView from '../components/AppStatusView';
 import AdminIcon from '../components/AdminIcon';
 import QuizAnalytics from '../components/QuizAnalytics';
+import QuizSequenceDialog from '../components/QuizSequenceDialog';
 import { USER_ROLES } from '../constants/auth';
 import {
   MAX_DRAFTS_PER_ADMIN,
@@ -13,6 +14,7 @@ import {
   publishQuiz,
   setQuizActiveState,
   softDeleteQuiz,
+  updateQuizSequenceBatch,
 } from '../services/quizManagementService';
 import {
   formatDateTime,
@@ -99,20 +101,34 @@ function DraftStrip({ drafts, onEdit }) {
           <h2>My Drafts</h2>
           <p>Resume a saved draft exactly where you left it.</p>
         </div>
+        <span className="admin-role-pill">{`${drafts.length}/${MAX_DRAFTS_PER_ADMIN}`}</span>
       </header>
 
       <div className="admin-quiz-draft-grid">
-        {drafts.slice(0, MAX_DRAFTS_PER_ADMIN).map((draft) => (
-          <button
+        {drafts.map((draft) => (
+          <article
             className="admin-quiz-draft-card"
             key={draft.id}
             onClick={() => onEdit(draft.id)}
-            type="button"
+            onKeyDown={(event) => {
+              if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                onEdit(draft.id);
+              }
+            }}
+            role="button"
+            tabIndex={0}
           >
-            <span className="admin-status-pill is-warning">Draft</span>
-            <strong>{getQuizDisplayTitle(draft.title) || 'Untitled Draft'}</strong>
-            <small>{draft.updatedAt ? `Updated ${formatDateTime(draft.updatedAt)}` : 'Recently saved'}</small>
-          </button>
+            <div>
+              <span className="admin-status-pill is-warning">Draft</span>
+              <h3>{getQuizDisplayTitle(draft.title) || 'Untitled Draft'}</h3>
+              <p>{draft.description || 'Draft in progress...'}</p>
+            </div>
+            <div className="admin-quiz-draft-meta">
+              <span>{`${draft.totalQuestions || draft.questions?.length || 0} questions`}</span>
+              <small>{formatDateTime(draft.updatedAt)}</small>
+            </div>
+          </article>
         ))}
       </div>
     </section>
@@ -150,9 +166,19 @@ function QuizCard({
       }}
     >
       <div className="admin-quiz-card-topline">
-        <span className={`admin-status-pill ${getStatusTone(status)}`}>
-          {formatQuizStatusLabel(status)}
-        </span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          {typeof quiz.sequence === 'number' && (
+            <span
+              className="admin-role-pill"
+              style={{ background: '#e6f4ea', color: '#137333', fontWeight: 700, fontSize: '0.75rem' }}
+            >
+              #{quiz.sequence}
+            </span>
+          )}
+          <span className={`admin-status-pill ${getStatusTone(status)}`}>
+            {formatQuizStatusLabel(status)}
+          </span>
+        </div>
         <span>{quiz.category || 'Uncategorized'}</span>
       </div>
 
@@ -179,12 +205,31 @@ function QuizCard({
           <dd>{quiz.publishAt ? formatShortDate(quiz.publishAt) : 'Not published'}</dd>
         </div>
         <div>
+          <dt>Expiry Date</dt>
+          <dd>{quiz.expireAt ? formatShortDate(quiz.expireAt) : 'No expiry'}</dd>
+        </div>
+        <div>
+          <dt>Retake Allowed</dt>
+          <dd>{quiz.allowRetake !== false ? 'Yes' : 'No'}</dd>
+        </div>
+        <div>
           <dt>Updated Date</dt>
           <dd>{formatShortDate(quiz.updatedAt || quiz.createdAt)}</dd>
         </div>
       </dl>
 
       <div className="admin-quiz-card-actions">
+        <button
+          className="secondary-cta is-compact"
+          disabled={isBusy}
+          onClick={(event) => handleActionClick(event, 'edit')}
+          aria-label={`Edit ${quiz.title || 'quiz'}`}
+          type="button"
+        >
+          <AdminIcon name="edit" size={16} />
+          <span className="admin-action-label">Edit</span>
+        </button>
+
         {canPublish ? (
           <button
             className="primary-cta is-compact"
@@ -193,7 +238,7 @@ function QuizCard({
             aria-label={`Publish ${quiz.title || 'quiz'}`}
             type="button"
           >
-            <AdminIcon name="bookPlus" size={16} />
+            <AdminIcon name="uploadCloud" size={16} />
             <span className="admin-action-label">{busyAction === 'publish' ? 'Publishing...' : 'Publish'}</span>
           </button>
         ) : null}
@@ -260,6 +305,8 @@ export default function QuizManagementPage({
   const [page, setPage] = useState(1);
   const [busyByQuizId, setBusyByQuizId] = useState({});
   const [feedback, setFeedback] = useState({ error: '', success: '' });
+  const [isSequenceDialogOpen, setIsSequenceDialogOpen] = useState(false);
+  const [isSavingSequence, setIsSavingSequence] = useState(false);
   const isQuizAdmin = [USER_ROLES.ADMIN, USER_ROLES.SUPER_ADMIN].includes(viewer?.role);
 
   const [analyticsQuiz, setAnalyticsQuiz] = useState(null);
@@ -322,25 +369,44 @@ export default function QuizManagementPage({
 
       if (action === 'deactivate') {
         await setQuizActiveState({ active: false, quizId: quiz.id, viewer });
-        setFeedback({ error: '', success: 'Quiz deactivated. Existing attempts can still finish normally.' });
+        setFeedback({ error: '', success: 'Quiz deactivated and hidden from users.' });
       }
 
       if (action === 'delete') {
         await softDeleteQuiz({ quizId: quiz.id, viewer });
-        setFeedback({ error: '', success: 'Quiz moved to INACTIVE. Hard delete is disabled.' });
+        setFeedback({ error: '', success: 'Quiz moved to inactive state.' });
       }
 
       await retry();
     } catch (actionError) {
+      console.error(`Quiz ${action} failed:`, actionError);
       setFeedback({
-        error: actionError?.publicMessage || 'We could not update this quiz right now.',
+        error: actionError.publicMessage || actionError.message || `Quiz ${action} failed.`,
         success: '',
       });
     } finally {
-      setBusyByQuizId((currentState) => ({
-        ...currentState,
-        [quiz.id]: '',
-      }));
+      setBusyByQuizId((currentState) => {
+        const nextState = { ...currentState };
+        delete nextState[quiz.id];
+        return nextState;
+      });
+    }
+  };
+
+  const handleSaveSequence = async (sequenceList) => {
+    setIsSavingSequence(true);
+    setFeedback({ error: '', success: '' });
+
+    try {
+      await updateQuizSequenceBatch(sequenceList, viewer);
+      setFeedback({ error: '', success: 'Quiz sequence updated successfully.' });
+      setIsSequenceDialogOpen(false);
+      await retry();
+    } catch (saveError) {
+      console.error('Failed to update quiz sequence:', saveError);
+      setFeedback({ error: saveError.publicMessage || saveError.message || 'Failed to update quiz sequence.', success: '' });
+    } finally {
+      setIsSavingSequence(false);
     }
   };
 
@@ -416,7 +482,18 @@ export default function QuizManagementPage({
             <h2>Quiz Listing</h2>
             <p>Showing {QUIZZES_PER_PAGE} quizzes per page. Users only see quizzes with ACTIVE status.</p>
           </div>
-          <span className="admin-role-pill">{filteredQuizzes.length} Total</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+            <span className="admin-role-pill">{filteredQuizzes.length} Total</span>
+            <button
+              className="secondary-cta is-compact"
+              onClick={() => setIsSequenceDialogOpen(true)}
+              style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}
+              type="button"
+            >
+              <AdminIcon name="list" size={16} />
+              <span>Manage Sequence</span>
+            </button>
+          </div>
         </header>
 
         <div className="admin-analytics-filters" style={{ padding: '0 24px 16px', borderBottom: '1px solid #e5e7eb' }}>
@@ -464,10 +541,18 @@ export default function QuizManagementPage({
           </>
         ) : (
           <div className="admin-empty-state">
-            <p>No quizzes found yet. Create the first concept quiz to begin Phase 1.</p>
+            No quizzes matched your search. Try changing the filters or create a new quiz.
           </div>
         )}
       </section>
+
+      <QuizSequenceDialog
+        isOpen={isSequenceDialogOpen}
+        isSaving={isSavingSequence}
+        onClose={() => setIsSequenceDialogOpen(false)}
+        onSave={handleSaveSequence}
+        quizzes={data.quizzes}
+      />
     </div>
   );
 }
