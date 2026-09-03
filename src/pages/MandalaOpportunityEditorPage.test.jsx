@@ -58,10 +58,10 @@ describe('MandalaOpportunityEditorPage', () => {
     renderEditor();
 
     // Default category is CLASS
-    expect(screen.getByText('Class Configuration')).toBeInTheDocument();
-    expect(screen.getByText('Available Modes')).toBeInTheDocument();
-    expect(screen.getByText('Available Languages')).toBeInTheDocument();
-    expect(screen.getByText('Available Days')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Class Configuration' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /Available Modes/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /Available Languages/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /Available Day/i })).toBeInTheDocument();
 
     // Checkboxes for modes (Online, Offline)
     expect(screen.getByLabelText('Online')).toBeInTheDocument();
@@ -72,16 +72,16 @@ describe('MandalaOpportunityEditorPage', () => {
     const user = userEvent.setup();
     renderEditor();
 
-    expect(screen.getByText('Class Configuration')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Class Configuration' })).toBeInTheDocument();
 
     const categorySelect = screen.getByLabelText(/^Category/i);
     await user.selectOptions(categorySelect, 'EVENT');
 
-    expect(screen.queryByText('Class Configuration')).not.toBeInTheDocument();
-    expect(screen.queryByText('Available Modes')).not.toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'Class Configuration' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: /Available Modes/i })).not.toBeInTheDocument();
 
     await user.selectOptions(categorySelect, 'FESTIVAL');
-    expect(screen.queryByText('Class Configuration')).not.toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'Class Configuration' })).not.toBeInTheDocument();
   });
 
   it('submits CLASS opportunity with classDetails payload', async () => {
@@ -112,5 +112,23 @@ describe('MandalaOpportunityEditorPage', () => {
       );
       expect(onSaved).toHaveBeenCalled();
     });
+  });
+
+  it('validates that available modes, languages, and days cannot be empty for CLASS', async () => {
+    const user = userEvent.setup();
+    renderEditor();
+
+    const titleInput = screen.getByLabelText(/opportunity title/i);
+    await user.type(titleInput, 'Gita Study Circle');
+
+    // Uncheck modes
+    await user.click(screen.getByLabelText('Online'));
+    await user.click(screen.getByLabelText('Offline'));
+
+    const saveBtn = screen.getByRole('button', { name: /save & go back/i });
+    await user.click(saveBtn);
+
+    expect(screen.getByText('At least one Available Mode is required.')).toBeInTheDocument();
+    expect(mockCreateSatsangOpportunity).not.toHaveBeenCalled();
   });
 });

@@ -19,23 +19,23 @@ import {
 } from '../services/mandalaAdminService';
 
 const ALL_CLASS_MODES = [
-  { value: 'ONLINE', label: 'Online' },
-  { value: 'OFFLINE', label: 'Offline' },
+  { value: 'ONLINE', label: 'Online', icon: 'wifi' },
+  { value: 'OFFLINE', label: 'Offline', icon: 'users' },
 ];
 
 const ALL_CLASS_LANGUAGES = [
-  { value: 'ENGLISH', label: 'English' },
-  { value: 'HINDI', label: 'Hindi' },
+  { value: 'ENGLISH', label: 'English', icon: 'message' },
+  { value: 'HINDI', label: 'Hindi', icon: 'message' },
 ];
 
 const ALL_CLASS_DAYS = [
-  { value: 'SATURDAY', label: 'Saturday' },
-  { value: 'SUNDAY', label: 'Sunday' },
-  { value: 'MONDAY', label: 'Monday' },
-  { value: 'TUESDAY', label: 'Tuesday' },
-  { value: 'WEDNESDAY', label: 'Wednesday' },
-  { value: 'THURSDAY', label: 'Thursday' },
-  { value: 'FRIDAY', label: 'Friday' },
+  { value: 'SATURDAY', label: 'Saturday', icon: 'calendar' },
+  { value: 'SUNDAY', label: 'Sunday', icon: 'calendar' },
+  { value: 'MONDAY', label: 'Monday', icon: 'calendar' },
+  { value: 'TUESDAY', label: 'Tuesday', icon: 'calendar' },
+  { value: 'WEDNESDAY', label: 'Wednesday', icon: 'calendar' },
+  { value: 'THURSDAY', label: 'Thursday', icon: 'calendar' },
+  { value: 'FRIDAY', label: 'Friday', icon: 'calendar' },
 ];
 
 function FieldError({ message }) {
@@ -180,10 +180,6 @@ export default function MandalaOpportunityEditorPage({
         ? currentList.filter((item) => item !== value)
         : [...currentList, value];
 
-      if (updatedList.length === 0) {
-        return prev;
-      }
-
       return {
         ...prev,
         classDetails: {
@@ -192,6 +188,8 @@ export default function MandalaOpportunityEditorPage({
         },
       };
     });
+    setFieldErrors((prev) => ({ ...prev, [`classDetails.${field}`]: '' }));
+    setFeedback({ error: '', success: '' });
   };
 
   const handleAddSocialLink = () => {
@@ -236,6 +234,28 @@ export default function MandalaOpportunityEditorPage({
     if (!formState.title.trim()) {
       setFieldErrors({ title: 'Opportunity Title is required.' });
       return;
+    }
+
+    if (formState.category === SATSANG_CATEGORIES.CLASS) {
+      const classErrors = {};
+      if (!formState.classDetails?.availableModes?.length) {
+        classErrors['classDetails.availableModes'] = 'At least one Available Mode is required.';
+      }
+      if (!formState.classDetails?.availableLanguages?.length) {
+        classErrors['classDetails.availableLanguages'] = 'At least one Available Language is required.';
+      }
+      if (!formState.classDetails?.availableDays?.length) {
+        classErrors['classDetails.availableDays'] = 'At least one Available Day is required.';
+      }
+
+      if (Object.keys(classErrors).length > 0) {
+        setFieldErrors((prev) => ({ ...prev, ...classErrors }));
+        setFeedback({
+          error: 'Please select required class options (Available Modes, Languages, and Days).',
+          success: '',
+        });
+        return;
+      }
     }
 
     // Validate social links
@@ -404,82 +424,177 @@ export default function MandalaOpportunityEditorPage({
 
           {/* Class-Specific Basic Information Configuration */}
           {formState.category === SATSANG_CATEGORIES.CLASS ? (
-            <div
-              className="admin-profile-field admin-quiz-field-wide"
-              style={{
-                background: '#f8fafc',
-                border: '1px solid #e2e8f0',
-                borderRadius: '0.75rem',
-                marginTop: '0.5rem',
-                padding: '1.25rem',
-              }}
-            >
-              <div style={{ marginBottom: '1rem' }}>
-                <strong style={{ color: 'var(--soul-green-deep, #142e29)', fontSize: '1rem' }}>
-                  Class Configuration
-                </strong>
-                <p style={{ color: '#64748b', fontSize: '0.85rem', margin: '0.25rem 0 0 0' }}>
-                  Configure the modes, languages, and days offered for this class.
-                </p>
+            <div className="admin-class-config-container admin-profile-field admin-quiz-field-wide">
+              {/* Section Header */}
+              <div className="admin-class-config-header">
+                <div className="admin-class-config-header-icon">
+                  <AdminIcon name="settings" size={24} />
+                </div>
+                <div className="admin-class-config-header-text">
+                  <h3>Class Configuration</h3>
+                  <p>Configure the modes, languages, and days offered for this class.</p>
+                </div>
               </div>
 
-              <div style={{ display: 'grid', gap: '1.25rem', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))' }}>
-                {/* Available Modes */}
-                <div>
-                  <span style={{ display: 'block', fontSize: '0.875rem', fontWeight: 600, marginBottom: '0.5rem' }}>
-                    Available Modes <span className="admin-required-indicator">*</span>
-                  </span>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-                    {ALL_CLASS_MODES.map((m) => (
-                      <label key={m.value} style={{ alignItems: 'center', cursor: 'pointer', display: 'flex', gap: '0.5rem', fontSize: '0.9rem' }}>
-                        <input
-                          checked={formState.classDetails?.availableModes?.includes(m.value) ?? false}
-                          onChange={() => handleToggleClassDetail('availableModes', m.value)}
-                          type="checkbox"
-                        />
-                        <span>{m.label}</span>
-                      </label>
-                    ))}
+              {/* Top Grid: Available Modes & Available Languages */}
+              <div className="admin-class-config-top-grid">
+                {/* 1. Available Modes */}
+                <div className="admin-class-config-card">
+                  <div className="admin-class-card-header">
+                    <div className="admin-class-card-icon-badge">
+                      <AdminIcon name="monitor" size={18} />
+                    </div>
+                    <div className="admin-class-card-title-wrap">
+                      <h4>
+                        Available Modes <span className="admin-required-indicator">*</span>
+                      </h4>
+                      <p>Select the delivery modes for this class</p>
+                    </div>
+                  </div>
+
+                  <div className="admin-class-options-grid">
+                    {ALL_CLASS_MODES.map((m) => {
+                      const isSelected = formState.classDetails?.availableModes?.includes(m.value) ?? false;
+                      return (
+                        <label
+                          key={m.value}
+                          className={`admin-class-option-tile ${isSelected ? 'is-selected' : ''}`}
+                        >
+                          <input
+                            type="checkbox"
+                            className="admin-class-tile-input"
+                            checked={isSelected}
+                            onChange={() => handleToggleClassDetail('availableModes', m.value)}
+                          />
+                          <div className="admin-class-tile-left">
+                            <div className="admin-class-tile-icon">
+                              <AdminIcon name={m.icon} size={18} />
+                            </div>
+                            <span className="admin-class-tile-label">{m.label}</span>
+                          </div>
+                          <div className={`admin-class-tile-check ${isSelected ? 'is-checked' : ''}`}>
+                            {isSelected ? <AdminIcon name="check" size={13} /> : null}
+                          </div>
+                        </label>
+                      );
+                    })}
+                  </div>
+
+                  <FieldError message={fieldErrors['classDetails.availableModes']} />
+
+                  <div className="admin-class-card-notice">
+                    <AdminIcon name="info" size={14} />
+                    <span>Select the delivery modes for this class via the choices below</span>
                   </div>
                 </div>
 
-                {/* Available Languages */}
-                <div>
-                  <span style={{ display: 'block', fontSize: '0.875rem', fontWeight: 600, marginBottom: '0.5rem' }}>
-                    Available Languages <span className="admin-required-indicator">*</span>
-                  </span>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-                    {ALL_CLASS_LANGUAGES.map((l) => (
-                      <label key={l.value} style={{ alignItems: 'center', cursor: 'pointer', display: 'flex', gap: '0.5rem', fontSize: '0.9rem' }}>
-                        <input
-                          checked={formState.classDetails?.availableLanguages?.includes(l.value) ?? false}
-                          onChange={() => handleToggleClassDetail('availableLanguages', l.value)}
-                          type="checkbox"
-                        />
-                        <span>{l.label}</span>
-                      </label>
-                    ))}
+                {/* 2. Available Languages */}
+                <div className="admin-class-config-card">
+                  <div className="admin-class-card-header">
+                    <div className="admin-class-card-icon-badge">
+                      <AdminIcon name="globe" size={18} />
+                    </div>
+                    <div className="admin-class-card-title-wrap">
+                      <h4>
+                        Available Languages <span className="admin-required-indicator">*</span>
+                      </h4>
+                      <p>Select the languages for this class</p>
+                    </div>
+                  </div>
+
+                  <div className="admin-class-options-grid">
+                    {ALL_CLASS_LANGUAGES.map((l) => {
+                      const isSelected = formState.classDetails?.availableLanguages?.includes(l.value) ?? false;
+                      return (
+                        <label
+                          key={l.value}
+                          className={`admin-class-option-tile ${isSelected ? 'is-selected' : ''}`}
+                        >
+                          <input
+                            type="checkbox"
+                            className="admin-class-tile-input"
+                            checked={isSelected}
+                            onChange={() => handleToggleClassDetail('availableLanguages', l.value)}
+                          />
+                          <div className="admin-class-tile-left">
+                            <div className="admin-class-tile-icon">
+                              <AdminIcon name={l.icon} size={18} />
+                            </div>
+                            <span className="admin-class-tile-label">{l.label}</span>
+                          </div>
+                          <div className={`admin-class-tile-check ${isSelected ? 'is-checked' : ''}`}>
+                            {isSelected ? <AdminIcon name="check" size={13} /> : null}
+                          </div>
+                        </label>
+                      );
+                    })}
+                  </div>
+
+                  <FieldError message={fieldErrors['classDetails.availableLanguages']} />
+
+                  <div className="admin-class-card-notice">
+                    <AdminIcon name="info" size={14} />
+                    <span>Select the languages for this class via the choices below</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Bottom Card: Available Days */}
+              <div className="admin-class-config-card admin-class-days-card">
+                <div className="admin-class-card-header">
+                  <div className="admin-class-card-icon-badge">
+                    <AdminIcon name="calendar" size={18} />
+                  </div>
+                  <div className="admin-class-card-title-wrap">
+                    <h4>
+                      Available Day <span className="admin-required-indicator">*</span>
+                    </h4>
+                    <p>Select the day when this class is available</p>
                   </div>
                 </div>
 
-                {/* Available Days */}
-                <div style={{ gridColumn: '1 / -1' }}>
-                  <span style={{ display: 'block', fontSize: '0.875rem', fontWeight: 600, marginBottom: '0.5rem' }}>
-                    Available Days <span className="admin-required-indicator">*</span>
-                  </span>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.85rem' }}>
-                    {ALL_CLASS_DAYS.map((d) => (
-                      <label key={d.value} style={{ alignItems: 'center', cursor: 'pointer', display: 'flex', gap: '0.5rem', fontSize: '0.9rem' }}>
+                <div className="admin-class-days-grid">
+                  {ALL_CLASS_DAYS.map((d) => {
+                    const isSelected = formState.classDetails?.availableDays?.includes(d.value) ?? false;
+                    return (
+                      <label
+                        key={d.value}
+                        className={`admin-class-day-tile ${isSelected ? 'is-selected' : ''}`}
+                      >
                         <input
-                          checked={formState.classDetails?.availableDays?.includes(d.value) ?? false}
+                          type="checkbox"
+                          className="admin-class-tile-input"
+                          checked={isSelected}
                           onChange={() => handleToggleClassDetail('availableDays', d.value)}
-                          type="checkbox"
                         />
-                        <span>{d.label}</span>
+                        <div className="admin-class-day-icon">
+                          <AdminIcon name="calendar" size={20} />
+                        </div>
+                        <span className="admin-class-day-label">{d.label}</span>
+                        <div className={`admin-class-day-radio ${isSelected ? 'is-checked' : ''}`}>
+                          {isSelected ? <span className="admin-class-radio-inner" /> : null}
+                        </div>
                       </label>
-                    ))}
-                  </div>
+                    );
+                  })}
                 </div>
+
+                <FieldError message={fieldErrors['classDetails.availableDays']} />
+
+                <div className="admin-class-card-notice">
+                  <AdminIcon name="info" size={14} />
+                  <span>If a user selects &ldquo;Other&rdquo; in the interest form, they will be shown the remaining available days to choose from.</span>
+                </div>
+              </div>
+
+              {/* Bottom Tip Banner */}
+              <div className="admin-class-config-tip">
+                <div className="admin-class-tip-icon">
+                  <AdminIcon name="lightbulb" size={18} />
+                </div>
+                <span>
+                  <strong>Tip:</strong> Configure the options above to match your class schedule and availability.
+                </span>
               </div>
             </div>
           ) : null}
@@ -697,7 +812,8 @@ export default function MandalaOpportunityEditorPage({
           onClick={() => handleSubmit('save-stay')}
           type="button"
         >
-          {saving === 'save-stay' ? 'Saving...' : (isEditing ? 'Save Changes' : 'Save Draft')}
+          Save Changes
+          {/* {saving === 'save-stay' ? 'Saving...' : (isEditing ? 'Save Changes' : 'Save Draft')} */}
         </button>
 
         <button
